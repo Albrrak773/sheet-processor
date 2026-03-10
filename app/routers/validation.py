@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.canonical_cache import get_canonical_headers
 from app.db.database import get_session
 from app.models import ValidationResponse
 from app.services.data_extractor import (
@@ -12,7 +13,7 @@ from app.services.data_extractor import (
     is_google_sheet_url,
 )
 from app.services.header_validator import validate_headers
-from app.types import CANONICAL_COLUMNS, RowData
+from app.types import RowData
 
 router = APIRouter(prefix="/validate", tags=["validation"])
 
@@ -65,10 +66,11 @@ def _get_present_columns(rows: list[RowData]) -> list[str]:
     if not rows:
         return []
 
+    canonical_headers = get_canonical_headers()
     present: list[str] = []
     for col in rows[0].keys():
         col_lower = col.lower()
-        if col_lower in CANONICAL_COLUMNS:
+        if col_lower in canonical_headers:
             present.append(col_lower)
 
     return present

@@ -5,59 +5,39 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.canonical_cache import refresh_cache
 from app.db.database import get_session
 from app.db.schema import (
     Header,
     HeaderAlias,
     HeaderAliasCreate,
     HeaderAliasRead,
-    HeaderCreate,
-    HeaderRead,
 )
 from app.types import DEFAULT_ALIASES
 
 router = APIRouter(prefix="/aliases", tags=["aliases"])
 
 
-@router.get("/headers", response_model=list[HeaderRead])
-async def list_headers(
+@router.post("/headers/seed", status_code=201)
+async def seed_headers(
     session: AsyncSession = Depends(get_session),
-) -> list[Header]:
-    result = await session.execute(select(Header))
-    return list(result.scalars().all())
+) -> dict[str, str]:
+    seeded: list[str] = []
 
+    for canonical in DEFAULT_ALIASES.keys():
+        stmt = select(Header).where(Header.name == canonical)  # type: ignore[arg-type]
+        result = await session.execute(stmt)
+        existing = result.scalar_one_or_none()
 
-@router.post("/headers", response_model=HeaderRead, status_code=201)
-async def create_header(
-    header_data: HeaderCreate,
-    session: AsyncSession = Depends(get_session),
-) -> Header:
-    stmt = select(Header).where(Header.name == header_data.name.lower())  # type: ignore[arg-type]
-    result = await session.execute(stmt)
-    existing = result.scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=400, detail="Header already exists")
+        if not existing:
+            header = Header(name=canonical)
+            session.add(header)
+            seeded.append(canonical)
 
-    header = Header(name=header_data.name.lower())
-    session.add(header)
     await session.commit()
-    await session.refresh(header)
-    return header
+    await refresh_cache(session)
 
-
-@router.delete("/headers/{header_id}", status_code=204)
-async def delete_header(
-    header_id: int,
-    session: AsyncSession = Depends(get_session),
-) -> None:
-    stmt = select(Header).where(Header.id == header_id)  # type: ignore[arg-type]
-    result = await session.execute(stmt)
-    header = result.scalar_one_or_none()
-    if not header:
-        raise HTTPException(status_code=404, detail="Header not found")
-
-    await session.execute(delete(Header).where(Header.id == header_id))  # type: ignore[arg-type]
-    await session.commit()
+    return {"seeded": f"{len(seeded)} headers added"}
 
 
 @router.get("/", response_model=list[HeaderAliasRead])

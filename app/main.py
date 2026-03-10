@@ -5,13 +5,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.db.database import create_db_and_tables
+from app.canonical_cache import refresh_cache
+from app.db.database import get_session
 from app.routers import aliases, validation
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    await create_db_and_tables()
+    async for session in get_session():
+        await refresh_cache(session)
+        break
     yield
 
 

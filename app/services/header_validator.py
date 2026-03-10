@@ -4,8 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.canonical_cache import get_canonical_headers
 from app.db.schema import HeaderAlias
-from app.types import CANONICAL_COLUMNS, ColumnName, RowData
+from app.types import ColumnName, RowData
 
 
 async def validate_headers(
@@ -13,8 +14,9 @@ async def validate_headers(
     ignore_headers: list[str],
     session: AsyncSession,
 ) -> tuple[bool, list[ColumnName]]:
+    canonical_headers = get_canonical_headers()
     if not rows:
-        return False, list(CANONICAL_COLUMNS)
+        return False, list(canonical_headers)
 
     aliases_map = await _load_aliases(session)
     present_columns = _get_present_columns(rows[0], aliases_map)
@@ -40,12 +42,13 @@ def _get_present_columns(
     first_row: RowData,
     aliases_map: dict[ColumnName, ColumnName],
 ) -> set[ColumnName]:
+    canonical_headers = get_canonical_headers()
     present: set[ColumnName] = set()
 
     for col in first_row.keys():
         col_lower = col.lower()
 
-        if col_lower in CANONICAL_COLUMNS:
+        if col_lower in canonical_headers:
             present.add(col_lower)
         elif col_lower in aliases_map:
             canonical = aliases_map[col_lower]
@@ -58,10 +61,11 @@ def _get_missing_columns(
     present_columns: set[ColumnName],
     ignore_headers: list[str],
 ) -> list[ColumnName]:
+    canonical_headers = get_canonical_headers()
     ignore_set = {h.lower() for h in ignore_headers}
 
     missing: list[ColumnName] = []
-    for col in CANONICAL_COLUMNS:
+    for col in canonical_headers:
         if col not in present_columns and col not in ignore_set:
             missing.append(col)
 
