@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlmodel import SQLModel
 
 from app.config import settings
-from app.db.schema import Header, HeaderAlias
+from app.db.schema import Header, HeaderAlias  # noqa: F401 # type: ignore[reportUnusedImport]
 
 engine = create_async_engine(settings.database_url, echo=settings.environment == "development")
 

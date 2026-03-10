@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_session
-from app.models import ColumnOptionalParams, ValidationRequest, ValidationResponse
+from app.models import ValidationResponse
 from app.services.data_extractor import (
-    extract_from_file,
+    extract_from_file_url,
     extract_from_google_sheet,
     extract_from_raw,
+    is_google_sheet_url,
 )
 from app.services.header_validator import validate_headers
 from app.types import CANONICAL_COLUMNS, RowData
@@ -16,30 +17,22 @@ from app.types import CANONICAL_COLUMNS, RowData
 router = APIRouter(prefix="/validate", tags=["validation"])
 
 
-@router.post("/", response_model=ValidationResponse)
-async def validate_sheet(
+@router.post("", response_model=ValidationResponse)
+async def validate(
     session: AsyncSession = Depends(get_session),
-    sheet_url: str | None = Form(None),
-    data: str | None = Form(None),
-    format: str | None = Form(None),
-    file: UploadFile | None = File(None),
-    name: bool = Form(False),
-    email: bool = Form(False),
-    university_id: bool = Form(False),
-    gender: bool = Form(False),
-    phone: bool = Form(True),
+    data_source: str = Query(
+        ..., description="URL to Google Sheet, file URL, or 'raw'"
+    ),
+    ignore_header: list[str] = Query(
+        default=[], description="Headers to consider optional"
+    ),
+    raw_data: str | None = Body(
+        default=None, description="Raw CSV/TSV data when data_source='raw'"
+    ),
 ) -> ValidationResponse:
-    optional_params = ColumnOptionalParams.from_query_params(
-        name=name,
-        email=email,
-        university_id=university_id,
-        gender=gender,
-        phone=phone,
-    )
+    rows = await _extract_rows(data_source, raw_data)
 
-    rows = _extract_rows(sheet_url, data, format, file)
-
-    is_valid, missing_columns = await validate_headers(rows, optional_params, session)
+    is_valid, missing_columns = await validate_headers(rows, ignore_header, session)
 
     present_columns = _get_present_columns(rows)
 
@@ -53,59 +46,19 @@ async def validate_sheet(
     )
 
 
-@router.post("/json", response_model=ValidationResponse)
-async def validate_sheet_json(
-    request: ValidationRequest,
-    session: AsyncSession = Depends(get_session),
-    name: bool = False,
-    email: bool = False,
-    university_id: bool = Form(False),
-    gender: bool = Form(False),
-    phone: bool = Form(True),
-) -> ValidationResponse:
-    optional_params = ColumnOptionalParams.from_query_params(
-        name=name,
-        email=email,
-        university_id=university_id,
-        gender=gender,
-        phone=phone,
-    )
+async def _extract_rows(data_source: str, raw_data: str | None) -> list[RowData]:
+    if data_source == "raw":
+        if raw_data is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Raw data required in body when data_source='raw'",
+            )
+        return extract_from_raw(raw_data)
 
-    rows = _extract_rows(request.sheet_url, request.data, request.format, None)
+    if is_google_sheet_url(data_source):
+        return await extract_from_google_sheet(data_source)
 
-    is_valid, missing_columns = await validate_headers(rows, optional_params, session)
-
-    present_columns = _get_present_columns(rows)
-
-    return ValidationResponse(
-        valid=is_valid,
-        total_rows=len(rows),
-        columns_found=present_columns,
-        missing_columns=missing_columns,
-        invalid_rows=[],
-        suggested_fixes=[],
-    )
-
-
-def _extract_rows(
-    sheet_url: str | None,
-    data: str | None,
-    format: str | None,
-    file: UploadFile | None,
-) -> list[RowData]:
-    if sheet_url:
-        return extract_from_google_sheet(sheet_url)
-
-    if file:
-        return extract_from_file(file)
-
-    if data and format:
-        return extract_from_raw(data, format)
-
-    raise HTTPException(
-        status_code=400,
-        detail="Provide either sheet_url, file upload, or data with format",
-    )
+    return await extract_from_file_url(data_source)
 
 
 def _get_present_columns(rows: list[RowData]) -> list[str]:

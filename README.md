@@ -1,6 +1,6 @@
 # Sheet Processor
 
-A FastAPI service to validate and process spreadsheet data from Google Sheets, uploaded files, or raw CSV/TSV input.
+A FastAPI service to validate and process spreadsheet data from Google Sheets, file URLs, or raw CSV/TSV input.
 
 ## Architecture
 
@@ -36,10 +36,8 @@ app/
 - **database.py**: SQLAlchemy async engine setup, Uses SQLModel with async MySQL support.
 
 #### Models (`app/models.py`)
-Pydantic models for API requests/responses:
-- `ValidationRequest`: Input for validation
+Pydantic models for API responses:
 - `ValidationResponse`: Validation results
-- `ColumnOptionalParams`: Which columns can be optional
 - `InvalidRow`: Details about invalid data
 - `SuggestedFix`: Suggested corrections
 
@@ -47,18 +45,19 @@ Pydantic models for API requests/responses:
 **All functions are plain functions, not classes.**
 
 - **data_extractor.py**: Extract spreadsheet data
-  - `extract_from_google_sheet(url)`: Fetch from public Google Sheet
-  - `extract_from_file(file)`: Parse uploaded CSV/XLSX/TSV
-  - `extract_from_raw(data, format)`: Parse raw CSV/TSV string
+  - `extract_from_google_sheet(url)`: Fetch from public Google Sheet (async)
+  - `extract_from_file_url(url)`: Fetch and parse CSV/XLSX/TSV from URL (async)
+  - `extract_from_raw(data)`: Parse raw CSV/TSV string (auto-detects format)
 
 - **header_validator.py**: Validate column headers
-  - `validate_headers(rows, optional_params, session)`: Check required columns exist
+  - `validate_headers(rows, ignore_headers, session)`: Check required columns exist
   - Resolves aliases from database
   - Returns: (is_valid, missing_columns)
 
 #### Routers (`app/routers/`)
 - **validation.py**: `POST /validate` endpoint
-  - Accept: Google Sheet URL, uploaded file, or raw CSV/TSV
+  - Query params: `data_source` (URL or "raw"), `ignore_header` (repeatable)
+  - Body: Plain text CSV/TSV when data_source="raw"
   - Returns: validation results
 
 - **aliases.py**: Header and alias management
@@ -72,8 +71,8 @@ Pydantic models for API requests/responses:
 
 ### Data Flow
 
-1. **Input**: Google Sheet URL, uploaded file, or raw CSV/TSV
-2. **Extraction**: `data_extractor.py` converts to list of row dicts
+1. **Input**: `data_source` query param (Google Sheet URL, file URL, or "raw")
+2. **Extraction**: `data_extractor.py` fetches and converts to list of row dicts
 3. **Validation**: `header_validator.py` checks columns against required set
 4. **Response**: Returns validation results with missing columns
 
@@ -112,8 +111,11 @@ uv run python run.py
 ## API Endpoints
 
 ### Validation
-- `POST /validate` - Validate a sheet (multipart form)
-- `POST /validate/json` - Validate a sheet (JSON body)
+- `POST /validate?data_source=<url_or_raw>` - Validate a sheet
+  - Query params:
+    - `data_source` (required): Google Sheet URL, file URL (.csv/.xlsx/.xls/.tsv), or "raw"
+    - `ignore_header` (optional, repeatable): Headers to consider optional
+  - Body: Plain text CSV/TSV data when `data_source=raw`
 
 ### Aliases
 - `GET /aliases/headers` - List all headers

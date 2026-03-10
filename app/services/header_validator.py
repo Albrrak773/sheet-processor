@@ -5,13 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.db.schema import HeaderAlias
-from app.models import ColumnOptionalParams
 from app.types import CANONICAL_COLUMNS, ColumnName, RowData
 
 
 async def validate_headers(
     rows: list[RowData],
-    optional_columns: ColumnOptionalParams,
+    ignore_headers: list[str],
     session: AsyncSession,
 ) -> tuple[bool, list[ColumnName]]:
     if not rows:
@@ -19,13 +18,13 @@ async def validate_headers(
 
     aliases_map = await _load_aliases(session)
     present_columns = _get_present_columns(rows[0], aliases_map)
-    missing_columns = _get_missing_columns(present_columns, optional_columns)
+    missing_columns = _get_missing_columns(present_columns, ignore_headers)
 
     return len(missing_columns) == 0, missing_columns
 
 
 async def _load_aliases(session: AsyncSession) -> dict[ColumnName, ColumnName]:
-    stmt = select(HeaderAlias).options(joinedload(HeaderAlias.header))
+    stmt = select(HeaderAlias).options(joinedload(HeaderAlias.header))  # type: ignore[arg-type]
     result = await session.execute(stmt)
     aliases = result.scalars().all()
 
@@ -57,19 +56,13 @@ def _get_present_columns(
 
 def _get_missing_columns(
     present_columns: set[ColumnName],
-    optional_columns: ColumnOptionalParams,
+    ignore_headers: list[str],
 ) -> list[ColumnName]:
-    optional_map = {
-        "name": optional_columns.name,
-        "email": optional_columns.email,
-        "university_id": optional_columns.university_id,
-        "gender": optional_columns.gender,
-        "phone": optional_columns.phone,
-    }
+    ignore_set = {h.lower() for h in ignore_headers}
 
     missing: list[ColumnName] = []
     for col in CANONICAL_COLUMNS:
-        if col not in present_columns and not optional_map.get(col, False):
+        if col not in present_columns and col not in ignore_set:
             missing.append(col)
 
     return missing

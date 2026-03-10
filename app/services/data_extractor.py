@@ -6,20 +6,20 @@ from typing import Any
 
 import httpx
 import pandas as pd
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 
 from app.types import RowData
 
 
-def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
+async def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
     sheet_id = _extract_sheet_id(sheet_url)
     if sheet_id is None:
         raise ValueError("Invalid Google Sheet URL")
 
     csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
-    with httpx.Client(follow_redirects=True) as client:
-        response = client.get(csv_url)
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        response = await client.get(csv_url)
         response.raise_for_status()
 
     df = pd.read_csv(io.BytesIO(response.content))
@@ -28,46 +28,32 @@ def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
     return _dataframe_to_rows(df)
 
 
-def extract_from_file(file: UploadFile) -> list[RowData]:
-    content = file.file.read()
-    filename = file.filename or "unknown"
+async def extract_from_file_url(file_url: str) -> list[RowData]:
+    extension = _get_extension(file_url)
+    if extension not in {".csv", ".xlsx", ".xls", ".tsv"}:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file format: {extension or 'none'}. "
+                "Use .csv, .xlsx, .xls, or .tsv"
+            ),
+        )
 
-    extension = _get_extension(filename)
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        response = await client.get(file_url)
+        response.raise_for_status()
 
-    df = _read_file(content, extension)
+    df = _read_file(response.content, extension)
     df = _normalize_columns(df)
 
     return _dataframe_to_rows(df)
 
 
-def extract_from_raw(data: str, format: str) -> list[RowData]:
-    format_lower = format.lower()
-
-    df = _read_raw_data(data, format_lower)
+def extract_from_raw(data: str) -> list[RowData]:
+    df = _detect_and_parse_raw(data)
     df = _normalize_columns(df)
 
     return _dataframe_to_rows(df)
-
-
-def extract_rows(
-    sheet_url: str | None,
-    data: str | None,
-    format: str | None,
-    file: UploadFile | None,
-) -> list[RowData]:
-    if sheet_url:
-        return extract_from_google_sheet(sheet_url)
-
-    if file:
-        return extract_from_file(file)
-
-    if data and format:
-        return extract_from_raw(data, format)
-
-    raise HTTPException(
-        status_code=400,
-        detail="Provide either sheet_url, file upload, or data with format",
-    )
 
 
 def _extract_sheet_id(url: str) -> str | None:
@@ -102,13 +88,15 @@ def _read_file(content: bytes, extension: str) -> pd.DataFrame:
         raise ValueError(f"Unsupported file format: {extension}")
 
 
-def _read_raw_data(data: str, format: str) -> pd.DataFrame:
-    if format == "csv":
-        return pd.read_csv(io.StringIO(data))
-    elif format == "tsv":
+def _detect_and_parse_raw(data: str) -> pd.DataFrame:
+    first_line = data.split("\n")[0] if data else ""
+    if "\t" in first_line:
         return pd.read_csv(io.StringIO(data), sep="\t")
-    else:
-        raise ValueError(f"Unsupported format: {format}. Use 'csv' or 'tsv'.")
+    return pd.read_csv(io.StringIO(data))
+
+
+def is_google_sheet_url(url: str) -> bool:
+    return "docs.google.com/spreadsheets" in url or "/spreadsheets/d/" in url
 
 
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
