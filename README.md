@@ -79,6 +79,8 @@ Pydantic models for API requests/responses:
 
 ### Database Schema
 
+See `app/db/schema.sql` for the full schema.
+
 ```sql
 CREATE TABLE headers (
     id INT PRIMARY KEY,
@@ -87,7 +89,7 @@ CREATE TABLE headers (
 
 CREATE TABLE header_aliases (
     id INT PRIMARY KEY,
-    header_id INT NOT NULL,
+    header_id INT DEFAULT NULL,
     alias_name VARCHAR(255) NOT NULL UNIQUE,
     FOREIGN KEY (header_id) REFERENCES headers(id)
         ON DELETE CASCADE

@@ -18,7 +18,7 @@ def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
 
     csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
-    with httpx.Client() as client:
+    with httpx.Client(follow_redirects=True) as client:
         response = client.get(csv_url)
         response.raise_for_status()
 
