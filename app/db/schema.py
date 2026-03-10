@@ -21,6 +21,7 @@ class Header(SQLModel, table=True):
     __tablename__ = "headers"  # type: ignore[assignment]
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
+    is_optional: int = Field(default=0)
     aliases: list[HeaderAlias] = Relationship(
         sa_relationship=relationship("HeaderAlias", back_populates="header")
     )
@@ -43,6 +44,7 @@ class HeaderRead(SQLModel):
 class HeaderAliasRead(SQLModel):
     id: int
     header_id: int
+    header_name: str
     alias_name: str
 
 

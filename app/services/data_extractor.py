@@ -8,7 +8,7 @@ import httpx
 import pandas as pd
 from fastapi import HTTPException
 
-from app.types import RowData
+from app.models import RowData
 
 
 async def extract_from_google_sheet(sheet_url: str) -> list[RowData]:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.canonical_cache import get_alias_to_header_map, get_canonical_headers
-from app.types import ColumnName, RowData
+from app.models import ColumnName, RowData
 
 
 def validate_headers(

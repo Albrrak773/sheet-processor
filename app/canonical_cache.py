@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 from app.config import settings
 from app.db.schema import Header, HeaderAlias
 
-_cache: dict = {"canonical": [], "aliases": {}}
+_cache: dict = {"canonical": [], "aliases": {}, "optional": set()}
 
 
 def save_canonical_cache(data: dict[str, Any]) -> None:
@@ -19,7 +19,7 @@ def save_canonical_cache(data: dict[str, Any]) -> None:
 
 
 def get_canonical_headers() -> set[str]:
-    return set(_cache["canonical"])
+    return {h.lower() for h in _cache["canonical"]}
 
 
 def get_aliases_map() -> dict[str, list[str]]:
@@ -32,6 +32,10 @@ def get_alias_to_header_map() -> dict[str, str]:
         for alias in aliases:
             result[alias.lower()] = header_name.lower()
     return result
+
+
+def get_optional_headers() -> set[str]:
+    return _cache.get("optional", set())
 
 
 async def refresh_cache(session: AsyncSession) -> dict:
@@ -53,11 +57,22 @@ async def refresh_cache(session: AsyncSession) -> dict:
                 aliases_map[header_name] = []
             aliases_map[header_name].append(alias.alias_name)
 
+    optional_headers: set[str] = {
+        h.name.lower() for h in headers if getattr(h, "is_optional", 0) == 1
+    }
+
     _cache = {
         "canonical": [h.name for h in headers],
         "aliases": aliases_map,
+        "optional": optional_headers,
     }
 
-    save_canonical_cache(_cache)
+    save_canonical_cache(
+        {
+            "canonical": [h.name for h in headers],
+            "aliases": aliases_map,
+            "optional": list(optional_headers),
+        }
+    )
 
     return _cache
