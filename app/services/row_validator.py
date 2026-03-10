@@ -50,10 +50,10 @@ def validate_all_rows(
         if missing_fields:
             invalid_rows.append(
                 InvalidRow(
-                    row=row_idx + 1,
+                    row=row_idx + 2,
                     column=",".join(missing_fields),
                     value=None,
-                    reason=f"row {row_idx + 1}: missing {', '.join(missing_fields)}",
+                    reason=f"row {row_idx + 2}: missing {', '.join(missing_fields)}",
                 )
             )
 

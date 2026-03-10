@@ -52,10 +52,10 @@ async def refresh_cache(session: AsyncSession) -> dict:
     aliases_map: dict[str, list[str]] = {}
     for alias in aliases:
         if alias.header:
-            header_name = alias.header.name
+            header_name = alias.header.name.lower()
             if header_name not in aliases_map:
                 aliases_map[header_name] = []
-            aliases_map[header_name].append(alias.alias_name)
+            aliases_map[header_name].append(alias.alias_name.lower())
 
     optional_headers: set[str] = {
         h.name.lower() for h in headers if getattr(h, "is_optional", 0) == 1
