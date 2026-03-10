@@ -78,14 +78,17 @@ def _get_present_columns(rows: list[RowData]) -> list[str]:
 
     canonical_headers = get_canonical_headers()
     aliases_map = get_alias_to_header_map()
+    row_keys = list(rows[0].keys())
+    row_keys_lower = {k.lower() for k in row_keys}
+    row_key_by_lower = {k.lower(): k for k in row_keys}
+
     present: list[str] = []
-    for col in rows[0].keys():
+    for col in row_keys:
         col_lower = col.lower()
         if col_lower in canonical_headers:
-            present.append(col_lower)
+            present.append(col)
         elif col_lower in aliases_map:
             canonical = aliases_map[col_lower]
-            if canonical not in present:
-                present.append(canonical)
+            present.append(f"{col} ({canonical})")
 
     return present
