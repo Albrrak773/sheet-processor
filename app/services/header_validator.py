@@ -1,41 +1,22 @@
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
-
-from app.canonical_cache import get_canonical_headers
-from app.db.schema import HeaderAlias
+from app.canonical_cache import get_alias_to_header_map, get_canonical_headers
 from app.types import ColumnName, RowData
 
 
-async def validate_headers(
+def validate_headers(
     rows: list[RowData],
     ignore_headers: list[str],
-    session: AsyncSession,
 ) -> tuple[bool, list[ColumnName]]:
     canonical_headers = get_canonical_headers()
     if not rows:
         return False, list(canonical_headers)
 
-    aliases_map = await _load_aliases(session)
+    aliases_map = get_alias_to_header_map()
     present_columns = _get_present_columns(rows[0], aliases_map)
     missing_columns = _get_missing_columns(present_columns, ignore_headers)
 
     return len(missing_columns) == 0, missing_columns
-
-
-async def _load_aliases(session: AsyncSession) -> dict[ColumnName, ColumnName]:
-    stmt = select(HeaderAlias).options(joinedload(HeaderAlias.header))  # type: ignore[arg-type]
-    result = await session.execute(stmt)
-    aliases = result.scalars().all()
-
-    aliases_map: dict[ColumnName, ColumnName] = {}
-    for alias in aliases:
-        if alias.header:
-            aliases_map[alias.alias_name.lower()] = alias.header.name.lower()
-
-    return aliases_map
 
 
 def _get_present_columns(

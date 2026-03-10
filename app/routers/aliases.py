@@ -73,6 +73,7 @@ async def create_alias(
     session.add(alias)
     await session.commit()
     await session.refresh(alias)
+    await refresh_cache(session)
     return alias
 
 
@@ -89,34 +90,4 @@ async def delete_alias(
 
     await session.execute(delete(HeaderAlias).where(HeaderAlias.id == alias_id))  # type: ignore[arg-type]
     await session.commit()
-
-
-@router.post("/seed", status_code=201)
-async def seed_default_aliases(
-    session: AsyncSession = Depends(get_session),
-) -> dict[str, str]:
-    seeded: dict[str, str] = {}
-
-    for canonical, aliases in DEFAULT_ALIASES.items():
-        stmt = select(Header).where(Header.name == canonical)  # type: ignore[arg-type]
-        result = await session.execute(stmt)
-        header = result.scalar_one_or_none()
-
-        if not header:
-            header = Header(name=canonical)
-            session.add(header)
-            await session.flush()
-
-        for alias in aliases:
-            stmt = select(HeaderAlias).where(HeaderAlias.alias_name == alias)  # type: ignore[arg-type]
-            result = await session.execute(stmt)
-            if not result.scalar_one_or_none():
-                new_alias = HeaderAlias(
-                    header_id=header.id,  # type: ignore
-                    alias_name=alias,
-                )
-                session.add(new_alias)
-                seeded[alias] = canonical
-
-    await session.commit()
-    return {"seeded": f"{len(seeded)} aliases added"}
+    await refresh_cache(session)

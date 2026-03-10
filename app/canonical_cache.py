@@ -26,6 +26,14 @@ def get_aliases_map() -> dict[str, list[str]]:
     return _cache["aliases"]
 
 
+def get_alias_to_header_map() -> dict[str, str]:
+    result: dict[str, str] = {}
+    for header_name, aliases in _cache["aliases"].items():
+        for alias in aliases:
+            result[alias.lower()] = header_name.lower()
+    return result
+
+
 async def refresh_cache(session: AsyncSession) -> dict:
     global _cache
 

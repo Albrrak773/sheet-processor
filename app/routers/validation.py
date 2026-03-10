@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Body, HTTPException, Query
 
 from app.canonical_cache import get_canonical_headers
-from app.db.database import get_session
 from app.models import ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
@@ -20,7 +18,6 @@ router = APIRouter(prefix="/validate", tags=["validation"])
 
 @router.post("", response_model=ValidationResponse)
 async def validate(
-    session: AsyncSession = Depends(get_session),
     data_source: str = Query(
         ..., description="URL to Google Sheet, file URL, or 'raw'"
     ),
@@ -33,7 +30,7 @@ async def validate(
 ) -> ValidationResponse:
     rows = await _extract_rows(data_source, raw_data)
 
-    is_valid, missing_columns = await validate_headers(rows, ignore_header, session)
+    is_valid, missing_columns = validate_headers(rows, ignore_header)
 
     present_columns = _get_present_columns(rows)
 
