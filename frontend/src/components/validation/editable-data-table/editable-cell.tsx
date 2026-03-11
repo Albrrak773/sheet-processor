@@ -63,28 +63,29 @@ function EditableCell({
   return (
     <div
       className={cn(
-        "relative min-w-0",
+        "relative min-w-0 overflow-hidden",
         hasError && "border-l-4 border-l-red-500",
         !hasError && hasSuggestion && "border-l-4 border-l-amber-500"
       )}
     >
-      {isEditing ? (
-        <Input
+      <CellDisplay
+        value={value}
+        error={error}
+        suggestedValue={suggestedValue}
+        hasError={hasError}
+        hasSuggestion={hasSuggestion}
+        onEdit={() => setIsEditing(true)}
+      />
+      {isEditing && (
+        <input
           ref={inputRef}
+          type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleSubmit}
           onKeyDown={handleKeyDown}
-          className="h-7 w-full min-w-0 rounded-none border-primary text-sm"
-        />
-      ) : (
-        <CellDisplay
-          value={value}
-          error={error}
-          suggestedValue={suggestedValue}
-          hasError={hasError}
-          hasSuggestion={hasSuggestion}
-          onEdit={() => setIsEditing(true)}
+          className="absolute inset-0 z-10 box-border w-full border-2 border-primary bg-background px-2 text-sm outline-none"
+          autoFocus
         />
       )}
     </div>
