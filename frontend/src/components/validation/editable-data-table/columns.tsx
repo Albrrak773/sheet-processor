@@ -8,6 +8,16 @@ import {
 } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 
+function extractOriginalKey(displayName: string): string {
+  const match = displayName.match(/^(.+?)\s*\([^)]+\)$/)
+  return match ? match[1].trim() : displayName
+}
+
+interface ColumnInfo {
+  displayName: string
+  originalKey: string
+}
+
 interface ColumnsConfig {
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
@@ -21,6 +31,11 @@ export function buildColumns({
   suggestedFixes,
   onCellEdit,
 }: ColumnsConfig): Array<ColumnDef<TableRowData>> {
+  const columnInfos: Array<ColumnInfo> = columnNames.map((name) => ({
+    displayName: name,
+    originalKey: extractOriginalKey(name),
+  }))
+
   const statusColumn: ColumnDef<TableRowData> = {
     id: "_status",
     header: "",
@@ -84,28 +99,32 @@ export function buildColumns({
     ),
   }
 
-  const dataColumns: Array<ColumnDef<TableRowData>> = columnNames.map(
-    (col) => ({
-      id: col,
-      accessorFn: (row: TableRowData) => String(row[col] ?? ""),
-      header: col,
+  const dataColumns: Array<ColumnDef<TableRowData>> = columnInfos.map(
+    ({ displayName, originalKey }) => ({
+      id: displayName,
+      accessorFn: (row: TableRowData) => String(row[originalKey] ?? ""),
+      header: displayName,
       cell: ({ row }) => {
         const rowNum = row.original._rowNum
-        const cellValue = String(row.original[col] ?? "")
+        const cellValue = String(row.original[originalKey] ?? "")
 
         const error = invalidRows.find(
-          (ir) => ir.row === rowNum && ir.column === col
+          (ir) =>
+            ir.row === rowNum &&
+            (ir.column === originalKey || ir.column === displayName)
         )
 
         const suggestion = suggestedFixes.find(
-          (sf) => sf.row === rowNum && sf.column === col
+          (sf) =>
+            sf.row === rowNum &&
+            (sf.column === originalKey || sf.column === displayName)
         )
 
         return (
           <EditableCell
             value={cellValue}
             rowIndex={row.index}
-            columnId={col}
+            columnId={originalKey}
             error={error?.reason}
             suggestedValue={
               suggestion ? String(suggestion.suggested) : undefined
