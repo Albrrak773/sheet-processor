@@ -143,10 +143,7 @@ function ResultsPage() {
 
       <SummaryCards result={validationResult} />
 
-      <MissingColumnsAlert
-        columns={validationResult.missing_columns}
-        details={validationResult.details}
-      />
+      <MissingColumnsAlert columns={[]} details={validationResult.details} />
 
       <ActionsBar
         data={data}

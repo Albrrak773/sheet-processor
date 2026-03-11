@@ -7,16 +7,17 @@ from app.models import ColumnName, RowData
 def validate_headers(
     rows: list[RowData],
     ignore_headers: list[str],
-) -> tuple[bool, list[ColumnName], list[str]]:
+) -> tuple[bool, list[ColumnName], list[str], list[str]]:
     canonical_headers = get_canonical_headers()
     if not rows:
-        return False, list(canonical_headers), []
+        return False, list(canonical_headers), [], []
 
     present_canonical = _get_present_canonical(rows[0])
     present_columns = _format_present_columns(rows[0])
     missing_columns = _get_missing_columns(present_canonical, ignore_headers)
+    unmapped_columns = _get_unmapped_columns(rows[0])
 
-    return len(missing_columns) == 0, missing_columns, present_columns
+    return len(missing_columns) == 0, missing_columns, present_columns, unmapped_columns
 
 
 def _get_present_canonical(first_row: RowData) -> set[ColumnName]:
@@ -57,3 +58,16 @@ def _get_missing_columns(
     ignore_set = {h.lower() for h in ignore_headers}
 
     return [col for col in canonical_headers if col not in present_columns and col not in ignore_set]
+
+
+def _get_unmapped_columns(first_row: RowData) -> list[str]:
+    aliases_map = get_alias_to_header_map()
+    canonical_headers = get_canonical_headers()
+    unmapped: list[str] = []
+
+    for col in first_row.keys():
+        col_lower = col.lower()
+        if col_lower not in canonical_headers and col_lower not in aliases_map:
+            unmapped.append(col)
+
+    return unmapped

@@ -1,4 +1,9 @@
-import type { UploadResponse, ValidationResponse } from "./types"
+import type {
+  Header,
+  HeaderAliasRead,
+  UploadResponse,
+  ValidationResponse,
+} from "./types"
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 
@@ -57,4 +62,20 @@ export async function uploadFile(file: File): Promise<UploadResponse> {
     method: "POST",
     body: formData,
   })
+}
+
+export async function createAlias(
+  header: string,
+  newAlias: string
+): Promise<HeaderAliasRead> {
+  return request<HeaderAliasRead>(
+    `/aliases/${encodeURIComponent(header)}/${encodeURIComponent(newAlias)}`,
+    {
+      method: "POST",
+    }
+  )
+}
+
+export async function fetchHeaders(): Promise<Array<Header>> {
+  return request<Array<Header>>("/aliases/headers")
 }

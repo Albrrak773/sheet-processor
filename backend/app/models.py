@@ -15,6 +15,8 @@ DEFAULT_ALIASES: dict[ColumnName, list[str]] = {
     "phone": ["phone number", "phone_number", "mobile", "mobile number"],
 }
 
+OPTIONAL_COLUMNS: set[ColumnName] = {"phone"}
+
 
 class InvalidRow(BaseModel):
     row: int
@@ -39,6 +41,7 @@ class ValidationResponse(BaseModel):
     total_rows: int
     columns_found: list[str]
     missing_columns: list[str]
+    unmapped_columns: list[str] = []
     invalid_rows: list[InvalidRow]
     suggested_fixes: list[SuggestedFix]
     details: list[str] = []

@@ -26,10 +26,7 @@ const GoogleSheetsIcon = () => (
       fill="currentColor"
       d="M14.25 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.75L14.25 2z"
     />
-    <path
-      fill="#0F9D58"
-      d="M14.25 2v5.75H20L14.25 2z"
-    />
+    <path fill="#0F9D58" d="M14.25 2v5.75H20L14.25 2z" />
     <path
       fill="#fff"
       d="M8 13h3v2H8v-2zm5 0h3v2h-3v-2zm-5 3h3v2H8v-2zm5 0h3v2h-3v-2z"

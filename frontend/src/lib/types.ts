@@ -17,10 +17,24 @@ export interface ValidationResponse {
   total_rows: number
   columns_found: Array<string>
   missing_columns: Array<string>
+  unmapped_columns: Array<string>
   invalid_rows: Array<InvalidRow>
   suggested_fixes: Array<SuggestedFix>
   details: Array<string>
   data: Array<RowData>
+}
+
+export interface HeaderAliasRead {
+  id: number
+  header_id: number
+  header_name: string
+  alias_name: string
+}
+
+export interface Header {
+  id: number
+  name: string
+  is_optional: boolean
 }
 
 export interface UploadResponse {

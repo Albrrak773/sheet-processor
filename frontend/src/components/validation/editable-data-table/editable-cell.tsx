@@ -51,8 +51,7 @@ function EditableCell({
         }
       }
       document.addEventListener("mousedown", handleClickOutside)
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [isSelected, isEditing])
 
@@ -164,7 +163,7 @@ function CellDisplay({
       onKeyDown={onKeyDown}
       className={cn(
         "min-h-7 cursor-pointer px-2 py-1.5 text-sm outline-none",
-        isSelected && !isEditing && "ring-2 ring-inset ring-primary",
+        isSelected && !isEditing && "ring-2 ring-primary ring-inset",
         hasError &&
           "bg-red-100 font-medium text-red-900 dark:bg-red-950/50 dark:text-red-300",
         !hasError &&

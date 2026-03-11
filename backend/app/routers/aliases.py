@@ -13,7 +13,7 @@ from app.db.schema import (
     HeaderAliasRead,
     HeaderRead,
 )
-from app.models import DEFAULT_ALIASES
+from app.models import DEFAULT_ALIASES, OPTIONAL_COLUMNS
 
 router = APIRouter(prefix="/aliases", tags=["aliases"])
 
@@ -30,7 +30,8 @@ async def seed_headers(
         existing = result.scalar_one_or_none()
 
         if not existing:
-            header = Header(name=canonical)
+            is_optional = 1 if canonical in OPTIONAL_COLUMNS else 0
+            header = Header(name=canonical, is_optional=is_optional)
             session.add(header)
             seeded.append(canonical)
 
@@ -47,7 +48,10 @@ async def list_headers(
     stmt = select(Header)
     result = await session.execute(stmt)
     headers = list(result.scalars().all())
-    return [HeaderRead(id=h.id, name=h.name) for h in headers]
+    return [
+        HeaderRead(id=h.id, name=h.name, is_optional=bool(h.is_optional))
+        for h in headers
+    ]
 
 
 @router.get("/", response_model=list[HeaderAliasRead])

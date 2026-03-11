@@ -43,7 +43,7 @@ async def validate(
         rows = await extract_from_file_url(data_source)
     
     # 2. validate headers
-    is_valid, missing_columns, present_columns = validate_headers(rows, ignore_header)
+    is_valid, missing_columns, present_columns, unmapped_columns = validate_headers(rows, ignore_header)
 
 
     # 3. validate rows
@@ -57,6 +57,7 @@ async def validate(
         total_rows=len(rows),
         columns_found=present_columns,
         missing_columns=missing_columns,
+        unmapped_columns=unmapped_columns,
         invalid_rows=invalid_rows,
         suggested_fixes=[],
         details=details,

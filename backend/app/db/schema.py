@@ -39,6 +39,7 @@ class HeaderAliasCreate(SQLModel):
 class HeaderRead(SQLModel):
     id: int
     name: str
+    is_optional: bool
 
 
 class HeaderAliasRead(SQLModel):
