@@ -22,7 +22,7 @@ def validate_all_rows(rows: list[RowData]) -> tuple[list[InvalidRow], list[str]]
 
     empty_columns = _find_empty_columns(rows, required_columns)
     for col in empty_columns:
-        input_name = _get_input_name(rows[0], col)
+        input_name = _get_input_header(rows[0], col)
         details.append(f"column '{input_name}' is empty")
 
     for row_idx, row in enumerate(rows):
@@ -31,7 +31,7 @@ def validate_all_rows(rows: list[RowData]) -> tuple[list[InvalidRow], list[str]]
             if col in empty_columns:
                 continue
             if _is_empty(get_row_value(row, col)):
-                input_name = _get_input_name(rows[0], col)
+                input_name = _get_input_header(rows[0], col)
                 missing_fields.append(input_name)
 
         if missing_fields:
@@ -56,7 +56,7 @@ def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
     if not rows:
         return invalid_rows
 
-    input_name = _get_input_name(rows[0], uni_id_col)
+    input_name = _get_input_header(rows[0], uni_id_col)
     if input_name is None:
         return invalid_rows
 
@@ -97,7 +97,7 @@ def _find_empty_columns(
     return empty_columns
 
 
-def _get_input_name(row: RowData, canonical_col: ColumnName) -> str:
+def _get_input_header(row: RowData, canonical_col: ColumnName) -> str:
     key = resolve_column_key(row, canonical_col)
     return key if key else canonical_col
 

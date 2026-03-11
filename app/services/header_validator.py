@@ -7,33 +7,44 @@ from app.models import ColumnName, RowData
 def validate_headers(
     rows: list[RowData],
     ignore_headers: list[str],
-) -> tuple[bool, list[ColumnName]]:
+) -> tuple[bool, list[ColumnName], list[str]]:
     canonical_headers = get_canonical_headers()
     if not rows:
-        return False, list(canonical_headers)
+        return False, list(canonical_headers), []
 
+    present_canonical = _get_present_canonical(rows[0])
+    present_columns = _format_present_columns(rows[0])
+    missing_columns = _get_missing_columns(present_canonical, ignore_headers)
+
+    return len(missing_columns) == 0, missing_columns, present_columns
+
+
+def _get_present_canonical(first_row: RowData) -> set[ColumnName]:
     aliases_map = get_alias_to_header_map()
-    present_columns = _get_present_columns(rows[0], aliases_map)
-    missing_columns = _get_missing_columns(present_columns, ignore_headers)
-
-    return len(missing_columns) == 0, missing_columns
-
-
-def _get_present_columns(
-    first_row: RowData,
-    aliases_map: dict[ColumnName, ColumnName],
-) -> set[ColumnName]:
     canonical_headers = get_canonical_headers()
     present: set[ColumnName] = set()
 
     for col in first_row.keys():
         col_lower = col.lower()
-
         if col_lower in canonical_headers:
             present.add(col_lower)
         elif col_lower in aliases_map:
-            canonical = aliases_map[col_lower]
-            present.add(canonical)
+            present.add(aliases_map[col_lower])
+
+    return present
+
+
+def _format_present_columns(first_row: RowData) -> list[str]:
+    aliases_map = get_alias_to_header_map()
+    canonical_headers = get_canonical_headers()
+    present: list[str] = []
+
+    for col in first_row.keys():
+        col_lower = col.lower()
+        if col_lower in canonical_headers:
+            present.append(col)
+        elif col_lower in aliases_map:
+            present.append(f"{col} ({aliases_map[col_lower]})")
 
     return present
 
@@ -45,9 +56,4 @@ def _get_missing_columns(
     canonical_headers = get_canonical_headers()
     ignore_set = {h.lower() for h in ignore_headers}
 
-    missing: list[ColumnName] = []
-    for col in canonical_headers:
-        if col not in present_columns and col not in ignore_set:
-            missing.append(col)
-
-    return missing
+    return [col for col in canonical_headers if col not in present_columns and col not in ignore_set]

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
-from app.canonical import get_alias_to_header_map, get_canonical_headers
-from app.models import ValidationResponse
+from app.models import RowData, ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
     extract_from_google_sheet,
@@ -12,7 +11,6 @@ from app.services.data_extractor import (
 )
 from app.services.header_validator import validate_headers
 from app.services.row_validator import validate_all_rows
-from app.models import RowData
 
 router = APIRouter(prefix="/validate", tags=["validation"])
 
@@ -31,9 +29,7 @@ async def validate(
 ) -> ValidationResponse:
     rows = await _extract_rows(data_source, raw_data)
 
-    is_valid, missing_columns = validate_headers(rows, ignore_header)
-
-    present_columns = _get_present_columns(rows)
+    is_valid, missing_columns, present_columns = validate_headers(rows, ignore_header)
 
     invalid_rows, details = validate_all_rows(rows)
 
@@ -64,25 +60,3 @@ async def _extract_rows(data_source: str, raw_data: str | None) -> list[RowData]
         return await extract_from_google_sheet(data_source)
 
     return await extract_from_file_url(data_source)
-
-
-def _get_present_columns(rows: list[RowData]) -> list[str]:
-    if not rows:
-        return []
-
-    canonical_headers = get_canonical_headers()
-    aliases_map = get_alias_to_header_map()
-    row_keys = list(rows[0].keys())
-    row_keys_lower = {k.lower() for k in row_keys}
-    row_key_by_lower = {k.lower(): k for k in row_keys}
-
-    present: list[str] = []
-    for col in row_keys:
-        col_lower = col.lower()
-        if col_lower in canonical_headers:
-            present.append(col)
-        elif col_lower in aliases_map:
-            canonical = aliases_map[col_lower]
-            present.append(f"{col} ({canonical})")
-
-    return present
