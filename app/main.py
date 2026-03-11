@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.canonical_cache import refresh_cache
+from app.canonical import refresh_cache
 from app.db.database import get_session
 from app.routers import aliases, validation
 

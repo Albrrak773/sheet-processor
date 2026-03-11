@@ -5,7 +5,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.canonical_cache import refresh_cache
+from app.canonical import refresh_cache
 from app.db.database import get_session
 from app.db.schema import (
     Header,

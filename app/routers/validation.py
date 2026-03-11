@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
-from app.canonical_cache import (
-    get_alias_to_header_map,
-    get_canonical_headers,
-    get_optional_headers,
-)
+from app.canonical import get_alias_to_header_map, get_canonical_headers
 from app.models import ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
@@ -39,9 +35,7 @@ async def validate(
 
     present_columns = _get_present_columns(rows)
 
-    canonical_headers = get_canonical_headers()
-    optional_headers = get_optional_headers()
-    invalid_rows, details = validate_all_rows(rows, canonical_headers, optional_headers)
+    invalid_rows, details = validate_all_rows(rows)
 
     if missing_columns or invalid_rows or details:
         is_valid = False

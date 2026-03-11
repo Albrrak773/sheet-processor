@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.canonical_cache import get_alias_to_header_map, get_canonical_headers
+from app.canonical import get_alias_to_header_map, get_canonical_headers
 from app.models import ColumnName, RowData
 
 

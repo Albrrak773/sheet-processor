@@ -9,18 +9,20 @@ A FastAPI service to validate and process spreadsheet data from Google Sheets, f
 ```
 app/
 ├── __init__.py
-├── main.py              # FastAPI app entry point,├── config.py            # Configuration (env vars)
-├── types.py              # Type aliases and constants
+├── main.py              # FastAPI app entry point
+├── config.py            # Configuration (env vars)
+├── canonical.py         # Canonical header/alias management with resolver helpers
+├── models.py            # Type aliases, constants, and Pydantic models
 ├── py.typed              # Type checker marker
 ├── db/
 │   ├── __init__.py
 │   ├── database.py          # SQLAlchemy async engine, session management
 │   └── schema.py             # SQLModel table definitions
-├── models.py              # Pydantic request/response models
 ├── services/
 │   ├── __init__.py
 │   ├── data_extractor.py   # Extract data from sheets/files
-│   └── header_validator.py  # Validate column headers
+│   ├── header_validator.py  # Validate column headers
+│   └── row_validator.py     # Validate row data (empty columns, uni id format)
 └── routers/
     ├── __init__.py
     ├── aliases.py          # Header/alias CRUD endpoints
@@ -29,6 +31,13 @@ app/
 
 ### Key Components
 
+#### Canonical (`app/canonical.py`)
+Centralized management of canonical column names and aliases.
+- Caches headers, aliases, and optional status for fast lookups
+- `resolve_column_key(row, canonical_col)`: Returns the actual key in a row for a canonical name
+- `get_row_value(row, canonical_col)`: Returns the value for a canonical column from a row
+- `refresh_cache(session)`: Reloads cache from database
+
 #### Database (`app/db/`)
 - **schema.py**: Defines SQL tables
   - `Header`: Canonical column names (name, email, university_id, gender, phone)
@@ -36,7 +45,9 @@ app/
 - **database.py**: SQLAlchemy async engine setup, Uses SQLModel with async MySQL support.
 
 #### Models (`app/models.py`)
-Pydantic models for API responses:
+Type aliases, constants, and Pydantic models:
+- `RowData`, `ColumnName`: Type aliases for row data
+- `DEFAULT_ALIASES`: Default alias mappings for seeding
 - `ValidationResponse`: Validation results
 - `InvalidRow`: Details about invalid data
 - `SuggestedFix`: Suggested corrections
@@ -50,9 +61,14 @@ Pydantic models for API responses:
   - `extract_from_raw(data)`: Parse raw CSV/TSV string (auto-detects format)
 
 - **header_validator.py**: Validate column headers
-  - `validate_headers(rows, ignore_headers, session)`: Check required columns exist
-  - Resolves aliases from database
+  - `validate_headers(rows, ignore_headers)`: Check required columns exist
+  - Resolves aliases from cache
   - Returns: (is_valid, missing_columns)
+
+- **row_validator.py**: Validate row data
+  - `validate_all_rows(rows)`: Check all rows for empty columns and format errors
+  - Validates university id is 9 digits
+  - Returns: (invalid_rows, details)
 
 #### Routers (`app/routers/`)
 - **validation.py**: `POST /validate` endpoint
