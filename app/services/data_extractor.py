@@ -7,11 +7,12 @@ from typing import Any
 import httpx
 import pandas as pd
 from fastapi import HTTPException
+from pydantic import HttpUrl
 
 from app.models import RowData
 
 
-async def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
+async def extract_from_google_sheet(sheet_url: HttpUrl) -> list[RowData]:
     sheet_id = _extract_sheet_id(sheet_url)
     if sheet_id is None:
         raise ValueError("Invalid Google Sheet URL")
@@ -20,6 +21,8 @@ async def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(csv_url)
+        if response.status_code == 401:
+            raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
         response.raise_for_status()
 
     df = pd.read_csv(io.BytesIO(response.content))
@@ -27,20 +30,15 @@ async def extract_from_google_sheet(sheet_url: str) -> list[RowData]:
 
     return _dataframe_to_rows(df)
 
+async def is_file_url(url: HttpUrl) -> bool:
+    extension = _get_extension(url)
+    return extension not in {".csv", ".xlsx", ".xls", ".tsv"}
 
-async def extract_from_file_url(file_url: str) -> list[RowData]:
+async def extract_from_file_url(file_url: HttpUrl) -> list[RowData]:
+
     extension = _get_extension(file_url)
-    if extension not in {".csv", ".xlsx", ".xls", ".tsv"}:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Unsupported file format: {extension or 'none'}. "
-                "Use .csv, .xlsx, .xls, or .tsv"
-            ),
-        )
-
     async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
-        response = await client.get(file_url)
+        response = await client.get(str(file_url))
         response.raise_for_status()
 
     df = _read_file(response.content, extension)
@@ -56,22 +54,22 @@ def extract_from_raw(data: str) -> list[RowData]:
     return _dataframe_to_rows(df)
 
 
-def _extract_sheet_id(url: str) -> str | None:
+def _extract_sheet_id(url: HttpUrl) -> str | None:
     patterns = [
         r"/spreadsheets/d/([a-zA-Z0-9-_]+)",
         r"/d/([a-zA-Z0-9-_]+)",
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, url)
+        match = re.search(pattern, str(url))
         if match:
             return match.group(1)
 
     return None
 
 
-def _get_extension(filename: str) -> str:
-    parts = filename.rsplit(".", 1)
+def _get_extension(filename: HttpUrl) -> str:
+    parts = str(filename).rsplit(".", 1)
     if len(parts) > 1:
         return f".{parts[-1].lower()}"
     return ""
@@ -93,10 +91,6 @@ def _detect_and_parse_raw(data: str) -> pd.DataFrame:
     if "\t" in first_line:
         return pd.read_csv(io.StringIO(data), sep="\t")
     return pd.read_csv(io.StringIO(data))
-
-
-def is_google_sheet_url(url: str) -> bool:
-    return "docs.google.com/spreadsheets" in url or "/spreadsheets/d/" in url
 
 
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:

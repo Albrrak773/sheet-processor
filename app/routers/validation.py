@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from typing import Annotated, Literal
+
 from fastapi import APIRouter, Body, HTTPException, Query
+from pydantic import HttpUrl
 
 from app.models import RowData, ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
     extract_from_google_sheet,
     extract_from_raw,
-    is_google_sheet_url,
+    is_file_url,
 )
 from app.services.header_validator import validate_headers
 from app.services.row_validator import validate_all_rows
@@ -17,20 +20,33 @@ router = APIRouter(prefix="/validate", tags=["validation"])
 
 @router.post("", response_model=ValidationResponse)
 async def validate(
-    data_source: str = Query(
-        ..., description="URL to Google Sheet, file URL, or 'raw'"
-    ),
-    ignore_header: list[str] = Query(
-        default=[], description="Headers to consider optional"
-    ),
-    raw_data: str | None = Body(
-        default=None, description="Raw CSV/TSV data when data_source='raw'"
-    ),
+    data_source: Annotated[HttpUrl | Literal["raw"], Query(description="URL to a Google Sheet or a file or 'raw' for inline data")],
+    ignore_header: Annotated[list[str] | None, Query(description="Headers to ignore")] = None,
+    raw_data: Annotated[str | None, Body(media_type="text/plain", description="Raw CSV/TSV data when data_source='raw'")] = None,
 ) -> ValidationResponse:
-    rows = await _extract_rows(data_source, raw_data)
 
+
+    # 1. validate source and extract data
+    if ignore_header is None:
+        ignore_header = []
+
+    if data_source == "raw":
+        if raw_data is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Raw data required in body when data_source='raw'",
+            )
+        rows = extract_from_raw(raw_data)
+    elif "docs.google.com/spreadsheets" in str(data_source) or "/spreadsheets/d/" in str(data_source):
+        rows = await extract_from_google_sheet(data_source)
+    elif is_file_url(data_source):
+        rows = await extract_from_file_url(data_source)
+    
+    # 2. validate headers
     is_valid, missing_columns, present_columns = validate_headers(rows, ignore_header)
 
+
+    # 3. validate rows
     invalid_rows, details = validate_all_rows(rows)
 
     if missing_columns or invalid_rows or details:
@@ -46,17 +62,3 @@ async def validate(
         details=details,
     )
 
-
-async def _extract_rows(data_source: str, raw_data: str | None) -> list[RowData]:
-    if data_source == "raw":
-        if raw_data is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Raw data required in body when data_source='raw'",
-            )
-        return extract_from_raw(raw_data)
-
-    if is_google_sheet_url(data_source):
-        return await extract_from_google_sheet(data_source)
-
-    return await extract_from_file_url(data_source)

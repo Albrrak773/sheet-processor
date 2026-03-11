@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel
 
@@ -28,7 +28,6 @@ class SuggestedFix(BaseModel):
     column: str
     current: Any
     suggested: Any
-
 
 class ValidationResponse(BaseModel):
     valid: bool
