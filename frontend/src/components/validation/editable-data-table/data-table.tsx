@@ -11,7 +11,7 @@ import { buildColumns } from "./columns"
 import { Toolbar } from "./toolbar"
 import type { FilterValue } from "./toolbar"
 import type { SortingState } from "@tanstack/react-table"
-import type { InvalidRow, RowData, SuggestedFix } from "@/lib/types"
+import type { InvalidRow, SuggestedFix, TableRowData } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils"
 
 interface DataTableProps {
-  data: Array<RowData>
+  data: Array<TableRowData>
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
   suggestedFixes: Array<SuggestedFix>
@@ -42,19 +42,19 @@ function DataTable({
   const [filter, setFilter] = React.useState<FilterValue>("all")
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  const invalidRowIndices = React.useMemo(
+  const invalidRowNumbers = React.useMemo(
     () => new Set(invalidRows.map((ir) => ir.row)),
     [invalidRows]
   )
 
   const filteredData = React.useMemo(() => {
     if (filter === "all") return data
-    return data.filter((_, index) => {
-      const rowNum = index + 1
-      const isInvalid = invalidRowIndices.has(rowNum)
+    return data.filter((row) => {
+      const rowNum = row._rowNum
+      const isInvalid = invalidRowNumbers.has(rowNum)
       return filter === "invalid" ? isInvalid : !isInvalid
     })
-  }, [data, filter, invalidRowIndices])
+  }, [data, filter, invalidRowNumbers])
 
   const columns = React.useMemo(
     () =>
@@ -95,7 +95,7 @@ function DataTable({
         searchValue={globalFilter}
         onSearchChange={setGlobalFilter}
         totalRows={data.length}
-        invalidRowCount={invalidRowIndices.size}
+        invalidRowCount={invalidRowNumbers.size}
       />
 
       <div className="overflow-auto border">
@@ -125,8 +125,8 @@ function DataTable({
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => {
-                const rowNum = row.index + 1
-                const hasError = invalidRowIndices.has(rowNum)
+                const rowNum = row.original._rowNum
+                const hasError = invalidRowNumbers.has(rowNum)
 
                 return (
                   <TableRow

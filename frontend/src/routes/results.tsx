@@ -1,6 +1,6 @@
 import * as React from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import type { RowData, ValidationResponse } from "@/lib/types"
+import type { RowData, TableRowData, ValidationResponse } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { SummaryCards } from "@/components/validation/summary-cards"
 import { MissingColumnsAlert } from "@/components/validation/missing-columns-alert"
@@ -28,7 +28,7 @@ function ResultsPage() {
   const navigate = useNavigate()
   const revalidate = useValidateFromRaw()
 
-  const [data, setData] = React.useState<Array<RowData>>([])
+  const [data, setData] = React.useState<Array<TableRowData>>([])
   const [validationResult, setValidationResult] =
     React.useState<ValidationResponse | null>(null)
   const [hasChanges, setHasChanges] = React.useState(false)
@@ -47,7 +47,11 @@ function ResultsPage() {
         return
       }
 
-      setData(session.data)
+      const dataWithRowNum = session.data.map((row, index) => ({
+        ...row,
+        _rowNum: index + 2,
+      }))
+      setData(dataWithRowNum)
       setValidationResult(session.validationResult)
       setLoading(false)
     }
@@ -58,12 +62,16 @@ function ResultsPage() {
     async (rowIndex: number, columnId: string, value: string) => {
       setData((prev) => {
         const updated = [...prev]
-        updated[rowIndex] = { ...updated[rowIndex], [columnId]: value }
+        const rowNum = prev[rowIndex]?._rowNum
+        updated[rowIndex] = {
+          ...updated[rowIndex],
+          [columnId]: value,
+          _rowNum: rowNum,
+        }
         return updated
       })
       setHasChanges(true)
 
-      // Persist to IndexedDB
       const session = await db.sessions.get(sessionId)
       if (session) {
         const updatedData = [...session.data]
@@ -81,13 +89,20 @@ function ResultsPage() {
   )
 
   function handleRevalidate() {
-    const tsv = rowsToTsv(data)
+    const dataWithoutRowNum: Array<RowData> = data.map(
+      ({ _rowNum: _, ...rest }) => rest
+    )
+    const tsv = rowsToTsv(dataWithoutRowNum)
     revalidate.mutate(
       { rawData: tsv },
       {
         onSuccess: async (result) => {
+          const dataWithRowNum = result.data.map((row, index) => ({
+            ...row,
+            _rowNum: index + 2,
+          }))
           setValidationResult(result)
-          setData(result.data)
+          setData(dataWithRowNum)
           setHasChanges(false)
 
           await db.sessions.update(sessionId, {
@@ -109,7 +124,9 @@ function ResultsPage() {
   }
 
   const columnNames =
-    data.length > 0 ? Object.keys(data[0]) : validationResult.columns_found
+    data.length > 0
+      ? Object.keys(data[0]).filter((k) => k !== "_rowNum")
+      : validationResult.columns_found
 
   return (
     <div className="mx-auto flex min-h-svh max-w-7xl flex-col gap-6 p-6">

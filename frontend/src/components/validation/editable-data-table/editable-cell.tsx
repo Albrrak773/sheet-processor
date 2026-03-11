@@ -60,37 +60,70 @@ function EditableCell({
   const hasError = !!error
   const hasSuggestion = !!suggestedValue
 
-  if (isEditing) {
-    return (
-      <Input
-        ref={inputRef}
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleSubmit}
-        onKeyDown={handleKeyDown}
-        className="h-7 rounded-none border-primary text-sm"
-      />
-    )
-  }
+  return (
+    <div
+      className={cn(
+        "relative min-w-0",
+        hasError && "border-l-4 border-l-red-500",
+        !hasError && hasSuggestion && "border-l-4 border-l-amber-500"
+      )}
+    >
+      {isEditing ? (
+        <Input
+          ref={inputRef}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleSubmit}
+          onKeyDown={handleKeyDown}
+          className="h-7 w-full min-w-0 rounded-none border-primary text-sm"
+        />
+      ) : (
+        <CellDisplay
+          value={value}
+          error={error}
+          suggestedValue={suggestedValue}
+          hasError={hasError}
+          hasSuggestion={hasSuggestion}
+          onEdit={() => setIsEditing(true)}
+        />
+      )}
+    </div>
+  )
+}
 
-  const cellContent = (
+function CellDisplay({
+  value,
+  error,
+  suggestedValue,
+  hasError,
+  hasSuggestion,
+  onEdit,
+}: {
+  value: string
+  error?: string
+  suggestedValue?: string
+  hasError: boolean
+  hasSuggestion: boolean
+  onEdit: () => void
+}) {
+  const content = (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => setIsEditing(true)}
+      onClick={onEdit}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
-          setIsEditing(true)
+          onEdit()
         }
       }}
       className={cn(
-        "cursor-pointer px-2 py-1.5 text-sm",
+        "min-h-7 cursor-pointer px-2 py-1.5 text-sm",
         hasError &&
-          "bg-red-50 text-red-900 dark:bg-red-950/30 dark:text-red-300",
+          "bg-red-100 font-medium text-red-900 dark:bg-red-950/50 dark:text-red-300",
         !hasError &&
           hasSuggestion &&
-          "bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+          "bg-amber-100 font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-300"
       )}
     >
       {value || <span className="text-muted-foreground italic">empty</span>}
@@ -100,20 +133,18 @@ function EditableCell({
   if (hasError || hasSuggestion) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{cellContent}</TooltipTrigger>
-        <TooltipContent>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="top">
           {hasError && <p className="text-red-500">{error}</p>}
           {hasSuggestion && (
-            <p className="text-amber-500">
-              Suggested: {String(suggestedValue)}
-            </p>
+            <p className="text-amber-500">Suggested: {suggestedValue}</p>
           )}
         </TooltipContent>
       </Tooltip>
     )
   }
 
-  return cellContent
+  return content
 }
 
 export { EditableCell }

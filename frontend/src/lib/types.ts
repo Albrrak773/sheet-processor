@@ -29,6 +29,10 @@ export interface UploadResponse {
 
 export type RowData = Record<string, unknown>
 
+export interface TableRowData extends RowData {
+  _rowNum: number
+}
+
 export type LinkType = "google-sheet" | "file-url" | "unknown"
 
 export type InputSource =
