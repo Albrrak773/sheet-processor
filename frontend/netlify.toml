@@ -1,0 +1,11 @@
+[[redirects]]
+  from = "/api/*"
+  to = "http://145.241.106.155:8000/*"
+  status = 200
+  force = true
+[build]
+  command = "vite build"
+  publish = "dist/client"
+[dev]
+  command = "vite dev"
+  port = 3000
