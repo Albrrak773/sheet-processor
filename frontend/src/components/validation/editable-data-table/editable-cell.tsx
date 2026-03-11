@@ -23,8 +23,10 @@ function EditableCell({
   suggestedValue,
   onSave,
 }: EditableCellProps) {
+  const [isSelected, setIsSelected] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const [editValue, setEditValue] = React.useState(value)
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -38,8 +40,35 @@ function EditableCell({
     }
   }, [isEditing])
 
+  React.useEffect(() => {
+    if (isSelected && !isEditing) {
+      function handleClickOutside(e: MouseEvent) {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(e.target as Node)
+        ) {
+          setIsSelected(false)
+        }
+      }
+      document.addEventListener("mousedown", handleClickOutside)
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [isSelected, isEditing])
+
+  function handleSelect() {
+    if (!isSelected) {
+      setIsSelected(true)
+    }
+  }
+
+  function handleDoubleClick() {
+    setIsEditing(true)
+  }
+
   function handleSubmit() {
     setIsEditing(false)
+    setIsSelected(false)
     if (editValue !== value) {
       onSave(rowIndex, columnId, editValue)
     }
@@ -48,11 +77,18 @@ function EditableCell({
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault()
-      handleSubmit()
+      if (isSelected && !isEditing) {
+        setIsEditing(true)
+      } else if (isEditing) {
+        handleSubmit()
+      }
     }
     if (e.key === "Escape") {
-      setEditValue(value)
-      setIsEditing(false)
+      if (isEditing) {
+        setEditValue(value)
+        setIsEditing(false)
+      }
+      setIsSelected(false)
     }
   }
 
@@ -61,6 +97,7 @@ function EditableCell({
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         "relative min-w-0 overflow-hidden",
         hasError && "border-l-4 border-l-red-500",
@@ -73,7 +110,11 @@ function EditableCell({
         suggestedValue={suggestedValue}
         hasError={hasError}
         hasSuggestion={hasSuggestion}
-        onEdit={() => setIsEditing(true)}
+        isSelected={isSelected}
+        isEditing={isEditing}
+        onSelect={handleSelect}
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
       />
       {isEditing && (
         <input
@@ -97,28 +138,33 @@ function CellDisplay({
   suggestedValue,
   hasError,
   hasSuggestion,
-  onEdit,
+  isSelected,
+  isEditing,
+  onSelect,
+  onDoubleClick,
+  onKeyDown,
 }: {
   value: string
   error?: string
   suggestedValue?: string
   hasError: boolean
   hasSuggestion: boolean
-  onEdit: () => void
+  isSelected: boolean
+  isEditing: boolean
+  onSelect: () => void
+  onDoubleClick: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
 }) {
   const content = (
     <div
       role="button"
       tabIndex={0}
-      onClick={onEdit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          onEdit()
-        }
-      }}
+      onClick={onSelect}
+      onDoubleClick={onDoubleClick}
+      onKeyDown={onKeyDown}
       className={cn(
-        "min-h-7 cursor-pointer px-2 py-1.5 text-sm",
+        "min-h-7 cursor-pointer px-2 py-1.5 text-sm outline-none",
+        isSelected && !isEditing && "ring-2 ring-inset ring-primary",
         hasError &&
           "bg-red-100 font-medium text-red-900 dark:bg-red-950/50 dark:text-red-300",
         !hasError &&
