@@ -123,10 +123,7 @@ function ResultsPage() {
     )
   }
 
-  const columnNames =
-    data.length > 0
-      ? Object.keys(data[0]).filter((k) => k !== "_rowNum")
-      : validationResult.columns_found
+  const columnNames = validationResult.columns_found
 
   return (
     <div className="mx-auto flex min-h-svh max-w-7xl flex-col gap-6 p-6">

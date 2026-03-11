@@ -11,6 +11,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import appCss from "../styles.css?url"
 import type { QueryClient } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 
 interface RouterContext {
   queryClient: QueryClient
@@ -51,6 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
           <ReactQueryDevtools buttonPosition="bottom-left" />
         </QueryClientProvider>
         <TanStackDevtools
