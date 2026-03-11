@@ -15,7 +15,16 @@ class Settings(BaseSettings):
     environment: str = Field(default="development")
     canonical_cache_file: Path = Field(default=Path("canonical_cache.json"))
 
+    # R2 / S3-compatible storage
+    r2_account_id: str = Field(default="")
+    r2_access_key_id: str = Field(default="")
+    r2_secret_access_key: str = Field(default="")
+    r2_bucket_name: str = Field(default="")
+    r2_public_url: str = Field(default="")
 
+    @property
+    def r2_endpoint_url(self) -> str:
+        return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
 
 
 settings = Settings()

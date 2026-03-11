@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Body, HTTPException, Query
 from pydantic import HttpUrl
 
-from app.models import RowData, ValidationResponse
+from app.models import ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
     extract_from_google_sheet,
@@ -60,5 +60,6 @@ async def validate(
         invalid_rows=invalid_rows,
         suggested_fixes=[],
         details=details,
+        data=rows,
     )
 

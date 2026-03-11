@@ -10,7 +10,6 @@ from app.db.database import get_session
 from app.db.schema import (
     Header,
     HeaderAlias,
-    HeaderAliasCreate,
     HeaderAliasRead,
     HeaderRead,
 )

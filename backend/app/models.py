@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, TypeAlias
+from typing import Any, TypeAlias
 
 from pydantic import BaseModel
 
@@ -29,6 +29,11 @@ class SuggestedFix(BaseModel):
     current: Any
     suggested: Any
 
+
+class UploadResponse(BaseModel):
+    url: str
+
+
 class ValidationResponse(BaseModel):
     valid: bool
     total_rows: int
@@ -37,3 +42,4 @@ class ValidationResponse(BaseModel):
     invalid_rows: list[InvalidRow]
     suggested_fixes: list[SuggestedFix]
     details: list[str] = []
+    data: list[RowData] = []
