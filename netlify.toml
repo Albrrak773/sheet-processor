@@ -6,6 +6,7 @@
 [build]
   command = "vite build"
   publish = "dist/client"
+  base = "frontend"
 [dev]
   command = "vite dev"
   port = 3000
