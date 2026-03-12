@@ -1,3 +1,9 @@
+[[redirects]]
+  from = "/api/*"
+  to = "http://145.241.106.155:8000/*"
+  status = 200
+  force = true
+
 [build]
 command = "bun run build"
 publish = "dist"
