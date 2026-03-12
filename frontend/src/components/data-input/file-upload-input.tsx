@@ -66,7 +66,7 @@ function FileUploadInput({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "flex min-h-[160px] cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed p-6 transition-colors",
+          "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed p-6 transition-colors",
           isDragging
             ? "border-primary bg-primary/5"
             : "border-muted-foreground/25 hover:border-muted-foreground/50",
