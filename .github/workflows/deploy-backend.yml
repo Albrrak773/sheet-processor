@@ -27,6 +27,10 @@ jobs:
           PORT=7100
           PM2_PATH="/home/ubuntu/.nvm/versions/node/v24.14.0/bin/"
           export PATH="$PM2_PATH:$PATH"
+
+          INFISICAL_ENV="prod"
+          INFISICAL_ENV_PATH="/backend"
+          INFISICAL_PROJECT_ID="c27e61cc-58b8-486f-bef3-20ce7e8b5ea8"
           
           echo "Cloning new repository..."
           rm -rf "$TARGET_DIR"
@@ -87,7 +91,7 @@ jobs:
 
           echo "💾 creating process $NAME..."
           pm2 delete $NAME || true
-          pm2 start "INFISICAL_TOKEN=$INFISICAL_TOKEN infisical run --env production -- uv run prod.py" --name $NAME --time
+          pm2 start "INFISICAL_TOKEN=$INFISICAL_TOKEN infisical run --env $INFISICAL_ENV --path='$INFISICAL_ENV_PATH' --projectId=$INFISICAL_PROJECT_ID -- uv run prod.py" --name $NAME --time
           pm2 save
           echo "Application is running on port $PORT ✅."
           echo "==============================="

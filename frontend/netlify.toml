@@ -1,6 +1,6 @@
 [[redirects]]
   from = "/api/*"
-  to = "http://145.241.106.155:8000/*"
+  to = "http://145.241.106.155:7100/*"
   status = 200
   force = true
 
