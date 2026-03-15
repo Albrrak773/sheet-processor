@@ -10,6 +10,8 @@ type BadgeState =
   | { type: "file-url" }
   | { type: "google-sheet-accessible" }
   | { type: "google-sheet-restricted"; message: string }
+  | { type: "google-sheet-published-accessible" }
+  | { type: "google-sheet-published-restricted"; message: string }
   | { type: "unknown" }
 
 interface LinkInputProps {
@@ -57,18 +59,22 @@ function LinkInput({
         return
       }
 
+      const isPublished = linkType === "google-sheet-published"
+      const accessibleState = isPublished ? "google-sheet-published-accessible" : "google-sheet-accessible"
+      const restrictedState = isPublished ? "google-sheet-published-restricted" : "google-sheet-restricted"
+
       try {
         await validateFromUrl(value)
-        setBadgeState({ type: "google-sheet-accessible" })
+        setBadgeState({ type: accessibleState })
         onRestrictedChange?.(false)
       } catch (error) {
         if (error instanceof Error && error.message.includes("400")) {
           const match = error.message.match(/\{.*\}/s)
           const detail = match ? JSON.parse(match[0]).detail : "Unknown error"
-          setBadgeState({ type: "google-sheet-restricted", message: detail })
+          setBadgeState({ type: restrictedState, message: detail } as BadgeState)
           onRestrictedChange?.(true)
         } else {
-          setBadgeState({ type: "google-sheet-accessible" })
+          setBadgeState({ type: accessibleState })
           onRestrictedChange?.(false)
         }
       }
@@ -85,7 +91,8 @@ function LinkInput({
       e.key === "Enter" &&
       badgeState.type !== "unknown" &&
       badgeState.type !== "empty" &&
-      badgeState.type !== "google-sheet-restricted"
+      badgeState.type !== "google-sheet-restricted" &&
+      badgeState.type !== "google-sheet-published-restricted"
     ) {
       e.preventDefault()
       onSubmit()
@@ -127,6 +134,17 @@ function LinkInput({
             </Badge>
           )}
           {badgeState.type === "google-sheet-restricted" && (
+            <Badge variant="destructive">{badgeState.message}</Badge>
+          )}
+          {badgeState.type === "google-sheet-published-accessible" && (
+            <Badge
+              variant="secondary"
+              className="border-green-500 text-green-700"
+            >
+              Published Google Sheet
+            </Badge>
+          )}
+          {badgeState.type === "google-sheet-published-restricted" && (
             <Badge variant="destructive">{badgeState.message}</Badge>
           )}
           {badgeState.type === "unknown" && (

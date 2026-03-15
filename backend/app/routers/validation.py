@@ -9,8 +9,10 @@ from app.models import ValidationResponse
 from app.services.data_extractor import (
     extract_from_file_url,
     extract_from_google_sheet,
+    extract_from_published_sheet,
     extract_from_raw,
     is_file_url,
+    is_published_sheet_url,
 )
 from app.services.header_validator import validate_headers
 from app.services.row_validator import validate_all_rows
@@ -37,10 +39,17 @@ async def validate(
                 detail="Raw data required in body when data_source='raw'",
             )
         rows = extract_from_raw(raw_data)
+    elif is_published_sheet_url(data_source):
+        rows = await extract_from_published_sheet(data_source)
     elif "docs.google.com/spreadsheets" in str(data_source) or "/spreadsheets/d/" in str(data_source):
         rows = await extract_from_google_sheet(data_source)
     elif is_file_url(data_source):
         rows = await extract_from_file_url(data_source)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported data source URL",
+        )
     
     # 2. validate headers
     is_valid, missing_columns, present_columns, unmapped_columns = validate_headers(rows, ignore_header)

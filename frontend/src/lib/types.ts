@@ -47,7 +47,7 @@ export interface TableRowData extends RowData {
   _rowNum: number
 }
 
-export type LinkType = "google-sheet" | "file-url" | "unknown"
+export type LinkType = "google-sheet" | "google-sheet-published" | "file-url" | "unknown"
 
 export type InputSource =
   | { type: "link"; url: string; linkType: LinkType }

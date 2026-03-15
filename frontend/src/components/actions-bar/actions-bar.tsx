@@ -113,7 +113,7 @@ function ActionsBar({
 
         <Button variant="outline" onClick={handleOpenSheet}>
           <GoogleSheetsIcon />
-          Open Sheet
+          Create new empty sheet
         </Button>
       </div>
 

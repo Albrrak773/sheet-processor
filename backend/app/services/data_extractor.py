@@ -30,6 +30,28 @@ async def extract_from_google_sheet(sheet_url: HttpUrl) -> list[RowData]:
 
     return _dataframe_to_rows(df)
 
+
+async def extract_from_published_sheet(sheet_url: HttpUrl) -> list[RowData]:
+    url_str = str(sheet_url)
+    url_str = re.sub(r"/pubhtml(?=[?#/]|$)", "/pub", url_str)
+    url_str = re.sub(r"[?&]output=[^&]*", "", url_str)
+    csv_url = f"{url_str}?output=csv"
+
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        response = await client.get(csv_url)
+        if response.status_code in (401, 403, 404):
+            raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
+        response.raise_for_status()
+
+    df = pd.read_csv(io.BytesIO(response.content))
+    df = _normalize_columns(df)
+
+    return _dataframe_to_rows(df)
+
+
+def is_published_sheet_url(url: HttpUrl) -> bool:
+    return bool(re.search(r"/spreadsheets/d/e/[a-zA-Z0-9-_]+/pub", str(url)))
+
 async def is_file_url(url: HttpUrl) -> bool:
     extension = _get_extension(url)
     return extension not in {".csv", ".xlsx", ".xls", ".tsv"}
