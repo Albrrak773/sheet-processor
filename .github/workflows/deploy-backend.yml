@@ -32,7 +32,9 @@ jobs:
           rm -rf "$TARGET_DIR"
           git clone --branch $BRANCH "$REPO_URL" "$TARGET_DIR"
           rm -rf $TARGET_DIR/frontend
+          shopt -s dotglob
           mv $TARGET_DIR/backend/* $TARGET_DIR
+          shopt -u dotglob
           rm -rf $TARGET_DIR/backend
           echo "Deployment Complete ✅."
           echo "==============================="
