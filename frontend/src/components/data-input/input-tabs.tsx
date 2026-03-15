@@ -23,6 +23,7 @@ function InputTabs({
   const [linkValue, setLinkValue] = React.useState("")
   const [rawValue, setRawValue] = React.useState("")
   const [file, setFile] = React.useState<File | null>(null)
+  const [isLinkRestricted, setIsLinkRestricted] = React.useState(false)
 
   function handleLinkSubmit() {
     const url = linkValue.trim()
@@ -62,11 +63,13 @@ function InputTabs({
               onChange={setLinkValue}
               onSubmit={handleLinkSubmit}
               disabled={isLoading}
+              onRestrictedChange={setIsLinkRestricted}
             />
             <Button
               onClick={handleLinkSubmit}
               disabled={
                 isLoading ||
+                isLinkRestricted ||
                 !linkValue.trim() ||
                 detectLinkType(linkValue) === "unknown"
               }
