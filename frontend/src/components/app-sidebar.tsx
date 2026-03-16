@@ -30,6 +30,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -132,18 +137,23 @@ function SessionList() {
           <SidebarMenu>
             {sessions.map((session) => (
               <SidebarMenuItem key={session.id}>
-                <SidebarMenuButton
-                  isActive={session.id === currentSessionId}
-                  onClick={() =>
-                    navigate({
-                      to: "/sessions/$id",
-                      params: { id: session.id },
-                    })
-                  }
-                  className="w-full pe-14"
-                >
-                  <span className="truncate">{session.title}</span>
-                </SidebarMenuButton>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={session.id === currentSessionId}
+                      onClick={() =>
+                        navigate({
+                          to: "/sessions/$id",
+                          params: { id: session.id },
+                        })
+                      }
+                      className="w-full pe-14"
+                    >
+                      <span className="truncate">{session.title}</span>
+                    </SidebarMenuButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{session.title}</TooltipContent>
+                </Tooltip>
                 <div className="absolute end-1 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 group-hover/menu-item:opacity-100">
                   <Button
                     variant="ghost"
@@ -278,8 +288,9 @@ export function AppSidebar({ children }: AppSidebarProps) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="flex flex-row items-center justify-between">
-          <span className="font-semibold">Sheet Processor</span>
           <SidebarTrigger />
+          <span className="font-semibold">Sheet Processor</span>
+          <div className="w-8" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>

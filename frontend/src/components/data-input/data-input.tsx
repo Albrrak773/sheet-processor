@@ -125,6 +125,11 @@ function DataInput() {
     }
   }
 
+  function handleCancelMapping() {
+    setPendingValidation(null)
+    setPendingSource(null)
+  }
+
   return (
     <>
       <InputTabs
@@ -145,6 +150,7 @@ function DataInput() {
         open={pendingValidation !== null}
         validationResponse={pendingValidation}
         onConfirm={handleColumnMapping}
+        onCancel={handleCancelMapping}
         isSubmitting={isMappingSubmitting}
       />
     </>

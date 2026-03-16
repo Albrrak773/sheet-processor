@@ -28,6 +28,7 @@ interface ColumnMappingModalProps {
     mappings: Map<string, string>,
     ignoredColumns: Array<string>
   ) => void
+  onCancel: () => void
   isSubmitting: boolean
 }
 
@@ -35,6 +36,7 @@ function ColumnMappingModal({
   open,
   validationResponse,
   onConfirm,
+  onCancel,
   isSubmitting,
 }: ColumnMappingModalProps) {
   const [mappings, setMappings] = React.useState<Map<string, string>>(
@@ -157,11 +159,8 @@ function ColumnMappingModal({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <Dialog open={open}>
-        <DialogContent
-          className="max-w-4xl"
-          onPointerDownOutside={(e: Event) => e.preventDefault()}
-        >
+      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Map Missing Columns</DialogTitle>
             <DialogDescription>
@@ -216,6 +215,13 @@ function ColumnMappingModal({
           </div>
 
           <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleConfirm}
               disabled={!canSubmit || isSubmitting}

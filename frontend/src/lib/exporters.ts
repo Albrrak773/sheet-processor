@@ -2,7 +2,7 @@ import type { RowData } from "./types"
 
 export function rowsToTsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
-  const headers = Object.keys(rows[0])
+  const headers = Object.keys(rows[0]).filter((h) => !h.startsWith("_"))
   const lines = [headers.join("\t")]
   for (const row of rows) {
     lines.push(headers.map((h) => String(row[h] ?? "")).join("\t"))
@@ -12,7 +12,7 @@ export function rowsToTsv(rows: Array<RowData>): string {
 
 export function rowsToCsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
-  const headers = Object.keys(rows[0])
+  const headers = Object.keys(rows[0]).filter((h) => !h.startsWith("_"))
   const escapeField = (val: string) => {
     if (val.includes(",") || val.includes('"') || val.includes("\n")) {
       return `"${val.replace(/"/g, '""')}"`
