@@ -12,7 +12,16 @@ from pydantic import HttpUrl
 from app.models import RowData
 
 
-async def extract_from_google_sheet(sheet_url: HttpUrl) -> list[RowData]:
+class ExtractionResult:
+    rows: list[RowData]
+    raw_csv: str
+
+    def __init__(self, rows: list[RowData], raw_csv: str):
+        self.rows = rows
+        self.raw_csv = raw_csv
+
+
+async def extract_from_google_sheet(sheet_url: HttpUrl) -> ExtractionResult:
     sheet_id = _extract_sheet_id(sheet_url)
     if sheet_id is None:
         raise ValueError("Invalid Google Sheet URL")
@@ -25,13 +34,14 @@ async def extract_from_google_sheet(sheet_url: HttpUrl) -> list[RowData]:
             raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
         response.raise_for_status()
 
+    raw_csv = response.content.decode("utf-8")
     df = pd.read_csv(io.BytesIO(response.content))
     df = _normalize_columns(df)
 
-    return _dataframe_to_rows(df)
+    return ExtractionResult(_dataframe_to_rows(df), raw_csv)
 
 
-async def extract_from_published_sheet(sheet_url: HttpUrl) -> list[RowData]:
+async def extract_from_published_sheet(sheet_url: HttpUrl) -> ExtractionResult:
     url_str = str(sheet_url)
     url_str = re.sub(r"/pubhtml(?=[?#/]|$)", "/pub", url_str)
     url_str = re.sub(r"[?&]output=[^&]*", "", url_str)
@@ -43,10 +53,11 @@ async def extract_from_published_sheet(sheet_url: HttpUrl) -> list[RowData]:
             raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
         response.raise_for_status()
 
+    raw_csv = response.content.decode("utf-8")
     df = pd.read_csv(io.BytesIO(response.content))
     df = _normalize_columns(df)
 
-    return _dataframe_to_rows(df)
+    return ExtractionResult(_dataframe_to_rows(df), raw_csv)
 
 
 def is_published_sheet_url(url: HttpUrl) -> bool:
@@ -56,24 +67,25 @@ async def is_file_url(url: HttpUrl) -> bool:
     extension = _get_extension(url)
     return extension not in {".csv", ".xlsx", ".xls", ".tsv"}
 
-async def extract_from_file_url(file_url: HttpUrl) -> list[RowData]:
+async def extract_from_file_url(file_url: HttpUrl) -> ExtractionResult:
 
     extension = _get_extension(file_url)
     async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
         response = await client.get(str(file_url))
         response.raise_for_status()
 
+    raw_csv = response.content.decode("utf-8")
     df = _read_file(response.content, extension)
     df = _normalize_columns(df)
 
-    return _dataframe_to_rows(df)
+    return ExtractionResult(_dataframe_to_rows(df), raw_csv)
 
 
-def extract_from_raw(data: str) -> list[RowData]:
+def extract_from_raw(data: str) -> ExtractionResult:
     df = _detect_and_parse_raw(data)
     df = _normalize_columns(df)
 
-    return _dataframe_to_rows(df)
+    return ExtractionResult(_dataframe_to_rows(df), data)
 
 
 def _extract_sheet_id(url: HttpUrl) -> str | None:

@@ -46,3 +46,4 @@ class ValidationResponse(BaseModel):
     suggested_fixes: list[SuggestedFix]
     details: list[str] = []
     data: list[RowData] = []
+    raw_csv: str = ""

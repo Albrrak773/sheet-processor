@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,9 +23,22 @@ class Settings(BaseSettings):
     r2_bucket_name: str = Field(default="")
     r2_public_url: str = Field(default="")
 
+    # Clerk authentication
+    clerk_jwks_url: str = Field(default="")
+
     @property
     def r2_endpoint_url(self) -> str:
         return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
 
 
 settings = Settings()
+
+
+def get_clerk_config() -> ClerkConfig:
+    if not settings.clerk_jwks_url:
+        raise ValueError("CLERK_JWKS_URL must be set")
+    return ClerkConfig(jwks_url=settings.clerk_jwks_url)
+
+
+def get_clerk_auth_guard() -> ClerkHTTPBearer:
+    return ClerkHTTPBearer(config=get_clerk_config(), add_state=True)

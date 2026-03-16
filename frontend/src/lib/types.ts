@@ -22,6 +22,7 @@ export interface ValidationResponse {
   suggested_fixes: Array<SuggestedFix>
   details: Array<string>
   data: Array<RowData>
+  raw_csv: string
 }
 
 export interface HeaderAliasRead {
@@ -47,9 +48,40 @@ export interface TableRowData extends RowData {
   _rowNum: number
 }
 
-export type LinkType = "google-sheet" | "google-sheet-published" | "file-url" | "unknown"
+export type LinkType =
+  | "google-sheet"
+  | "google-sheet-published"
+  | "file-url"
+  | "unknown"
 
 export type InputSource =
   | { type: "link"; url: string; linkType: LinkType }
   | { type: "raw"; data: string }
   | { type: "upload"; file: File }
+
+export interface SessionRead {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SessionDetail {
+  id: string
+  title: string
+  original_csv: string
+  data: Array<RowData>
+  created_at: string
+  updated_at: string
+}
+
+export interface SessionCreate {
+  title?: string
+  original_csv: string
+  data: Array<RowData>
+}
+
+export interface SessionUpdate {
+  title?: string
+  data?: Array<RowData>
+}

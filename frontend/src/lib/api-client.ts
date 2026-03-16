@@ -1,6 +1,10 @@
 import type {
   Header,
   HeaderAliasRead,
+  SessionCreate,
+  SessionDetail,
+  SessionRead,
+  SessionUpdate,
   UploadResponse,
   ValidationResponse,
 } from "./types"
@@ -11,9 +15,28 @@ if (!BACKEND_URL) {
   throw new Error("VITE_BACKEND_URL is not set")
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+let getToken: (() => Promise<string | null>) | null = null
+
+export function setAuthGetter(getter: () => Promise<string | null>) {
+  getToken = getter
+}
+
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  auth: boolean = false
+): Promise<T> {
   const url = `${BACKEND_URL}${path}`
-  const res = await fetch(url, init)
+  const headers = new Headers(init?.headers)
+
+  if (auth && getToken) {
+    const token = await getToken()
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`)
+    }
+  }
+
+  const res = await fetch(url, { ...init, headers })
 
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error")
@@ -78,4 +101,51 @@ export async function createAlias(
 
 export async function fetchHeaders(): Promise<Array<Header>> {
   return request<Array<Header>>("/aliases/headers")
+}
+
+export async function listSessions(): Promise<Array<SessionRead>> {
+  return request<Array<SessionRead>>("/sessions", {}, true)
+}
+
+export async function getSession(id: string): Promise<SessionDetail> {
+  return request<SessionDetail>(`/sessions/${id}`, {}, true)
+}
+
+export async function createSession(
+  data: SessionCreate
+): Promise<SessionDetail> {
+  return request<SessionDetail>(
+    "/sessions",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    true
+  )
+}
+
+export async function updateSession(
+  id: string,
+  data: SessionUpdate
+): Promise<SessionDetail> {
+  return request<SessionDetail>(
+    `/sessions/${id}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    true
+  )
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  await request(
+    `/sessions/${id}`,
+    {
+      method: "DELETE",
+    },
+    true
+  )
 }

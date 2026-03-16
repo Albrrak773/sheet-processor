@@ -216,7 +216,10 @@ function ColumnMappingModal({
           </div>
 
           <DialogFooter>
-            <Button onClick={handleConfirm} disabled={!canSubmit || isSubmitting}>
+            <Button
+              onClick={handleConfirm}
+              disabled={!canSubmit || isSubmitting}
+            >
               {isSubmitting ? "Processing..." : "Continue"}
             </Button>
           </DialogFooter>

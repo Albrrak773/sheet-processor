@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.canonical import refresh_cache
 from app.db.database import get_session
-from app.routers import aliases, upload, validation
+from app.routers import aliases, sessions, upload, validation
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(validation.router)
 app.include_router(aliases.router)
 app.include_router(upload.router)
+app.include_router(sessions.router)
 
 
 @app.get("/health")

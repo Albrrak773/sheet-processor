@@ -32,12 +32,18 @@ function DropZone({
       className={cn(
         "flex min-h-[44px] items-center justify-between gap-3 rounded-md border-2 border-dashed px-4 py-2.5 transition-colors",
         isOver && "border-primary bg-primary/10",
-        mappedColumn && "border-solid border-green-500 bg-green-50 dark:bg-green-950",
+        mappedColumn &&
+          "border-solid border-green-500 bg-green-50 dark:bg-green-950",
         isIgnored && "border-dashed border-muted-foreground/30 bg-muted/50"
       )}
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        <span className={cn("text-sm font-medium", isIgnored && "line-through text-muted-foreground")}>
+        <span
+          className={cn(
+            "text-sm font-medium",
+            isIgnored && "text-muted-foreground line-through"
+          )}
+        >
           {label}
         </span>
         {isOptional && !mappedColumn && !isIgnored && (

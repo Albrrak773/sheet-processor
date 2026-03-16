@@ -29,7 +29,9 @@ function LinkInput({
   disabled,
   onRestrictedChange,
 }: LinkInputProps) {
-  const [badgeState, setBadgeState] = React.useState<BadgeState>({ type: "empty" })
+  const [badgeState, setBadgeState] = React.useState<BadgeState>({
+    type: "empty",
+  })
 
   React.useEffect(() => {
     if (!value.trim()) {
@@ -60,8 +62,12 @@ function LinkInput({
       }
 
       const isPublished = linkType === "google-sheet-published"
-      const accessibleState = isPublished ? "google-sheet-published-accessible" : "google-sheet-accessible"
-      const restrictedState = isPublished ? "google-sheet-published-restricted" : "google-sheet-restricted"
+      const accessibleState = isPublished
+        ? "google-sheet-published-accessible"
+        : "google-sheet-accessible"
+      const restrictedState = isPublished
+        ? "google-sheet-published-restricted"
+        : "google-sheet-restricted"
 
       try {
         await validateFromUrl(value)
@@ -71,7 +77,10 @@ function LinkInput({
         if (error instanceof Error && error.message.includes("400")) {
           const match = error.message.match(/\{.*\}/s)
           const detail = match ? JSON.parse(match[0]).detail : "Unknown error"
-          setBadgeState({ type: restrictedState, message: detail } as BadgeState)
+          setBadgeState({
+            type: restrictedState,
+            message: detail,
+          } as BadgeState)
           onRestrictedChange?.(true)
         } else {
           setBadgeState({ type: accessibleState })
@@ -113,7 +122,10 @@ function LinkInput({
       {badgeState.type !== "empty" && (
         <div className="flex items-center gap-2">
           {badgeState.type === "checking" && (
-            <Badge variant="secondary" className="border-gray-400 text-gray-600">
+            <Badge
+              variant="secondary"
+              className="border-gray-400 text-gray-600"
+            >
               Checking...
             </Badge>
           )}

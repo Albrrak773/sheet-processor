@@ -1,6 +1,7 @@
 import type { LinkType } from "./types"
 
-const GOOGLE_SHEET_PUBLISHED_PATTERN = /\/spreadsheets\/d\/e\/[a-zA-Z0-9-_]+\/pub/
+const GOOGLE_SHEET_PUBLISHED_PATTERN =
+  /\/spreadsheets\/d\/e\/[a-zA-Z0-9-_]+\/pub/
 
 const GOOGLE_SHEET_PATTERNS = [
   /docs\.google\.com\/spreadsheets/,

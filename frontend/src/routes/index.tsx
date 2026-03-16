@@ -1,5 +1,6 @@
 import * as React from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import type { ValidationResponse } from "@/lib/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InputTabs } from "@/components/data-input/input-tabs"
@@ -8,9 +9,8 @@ import {
   useValidateFromRaw,
   useValidateFromUrl,
 } from "@/lib/queries/validation"
-import { db } from "@/db"
 import { ColumnMappingModal } from "@/components/validation/column-mapping-modal"
-import { createAlias } from "@/lib/api-client"
+import { createAlias, createSession } from "@/lib/api-client"
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const validateUrl = useValidateFromUrl()
   const validateRaw = useValidateFromRaw()
   const uploadAndValidate = useUploadAndValidate()
@@ -25,8 +26,6 @@ function HomePage() {
   const [pendingValidation, setPendingValidation] =
     React.useState<ValidationResponse | null>(null)
   const [pendingSource, setPendingSource] = React.useState<{
-    type: "google-sheet" | "file-url" | "upload" | "raw"
-    label: string
     rawData: string
   } | null>(null)
   const [isMappingSubmitting, setIsMappingSubmitting] = React.useState(false)
@@ -42,48 +41,31 @@ function HomePage() {
 
   async function createSessionAndNavigate(
     result: ValidationResponse,
-    sourceType: "google-sheet" | "file-url" | "upload" | "raw",
-    sourceLabel: string
-  ) {
-    const sessionId = crypto.randomUUID()
-
-    await db.sessions.add({
-      id: sessionId,
-      createdAt: new Date(),
-      source: { type: sourceType, label: sourceLabel },
-      data: result.data,
-      validationResult: result,
-      modified: false,
-    })
-
-    navigate({ to: "/results", search: { sessionId } })
-  }
-
-  function handleValidationResult(
-    result: ValidationResponse,
-    sourceType: "google-sheet" | "file-url" | "upload" | "raw",
-    sourceLabel: string,
     rawData: string
   ) {
+    const session = await createSession({
+      original_csv: result.raw_csv || rawData,
+      data: result.data,
+    })
+
+    queryClient.invalidateQueries({ queryKey: ["sessions"] })
+    navigate({ to: "/sessions/$id", params: { id: session.id } })
+  }
+
+  function handleValidationResult(result: ValidationResponse, rawData: string) {
     if (result.missing_columns.length > 0) {
       setPendingValidation(result)
-      setPendingSource({ type: sourceType, label: sourceLabel, rawData })
+      setPendingSource({ rawData })
     } else {
-      createSessionAndNavigate(result, sourceType, sourceLabel)
+      createSessionAndNavigate(result, rawData)
     }
   }
 
   function handleValidateUrl(url: string) {
-    const isGoogleSheet =
-      url.includes("docs.google.com/spreadsheets") ||
-      url.includes("/spreadsheets/d/")
-    const sourceType = isGoogleSheet ? "google-sheet" : "file-url"
-
     validateUrl.mutate(
       { url },
       {
-        onSuccess: (result) =>
-          handleValidationResult(result, sourceType, url, ""),
+        onSuccess: (result) => handleValidationResult(result, result.raw_csv),
       }
     )
   }
@@ -92,8 +74,7 @@ function HomePage() {
     validateRaw.mutate(
       { rawData: data },
       {
-        onSuccess: (result) =>
-          handleValidationResult(result, "raw", "Pasted data", data),
+        onSuccess: (result) => handleValidationResult(result, data),
       }
     )
   }
@@ -102,8 +83,7 @@ function HomePage() {
     uploadAndValidate.mutate(
       { file },
       {
-        onSuccess: (result) =>
-          handleValidationResult(result, "upload", file.name, ""),
+        onSuccess: (result) => handleValidationResult(result, result.raw_csv),
       }
     )
   }
@@ -128,11 +108,7 @@ function HomePage() {
             onSuccess: (result) => {
               setPendingValidation(null)
               setPendingSource(null)
-              createSessionAndNavigate(
-                result,
-                pendingSource.type,
-                pendingSource.label
-              )
+              createSessionAndNavigate(result, rawData)
             },
             onSettled: () => setIsMappingSubmitting(false),
           }
@@ -142,21 +118,20 @@ function HomePage() {
         setPendingSource(null)
         await createSessionAndNavigate(
           { ...pendingValidation, missing_columns: [] },
-          pendingSource.type,
-          pendingSource.label
+          ""
         )
         setIsMappingSubmitting(false)
       }
-    } catch (error) {
+    } catch (err) {
       setIsMappingSubmitting(false)
-      console.error("Failed to create aliases:", error)
+      console.error("Failed to create aliases:", err)
     }
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 p-6">
+    <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-2xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold">Sheet Processor</h1>
+        <h1 className="text-2xl font-bold">New Session</h1>
         <p className="text-sm text-muted-foreground">
           Validate and clean your spreadsheet data
         </p>

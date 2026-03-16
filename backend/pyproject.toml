@@ -17,6 +17,7 @@ dependencies = [
     "python-multipart>=0.0.12",
     "pydantic-settings>=2.6.0",
     "aioboto3>=15.5.0",
+    "fastapi-clerk-auth>=0.0.9",
 ]
 
 [project.optional-dependencies]

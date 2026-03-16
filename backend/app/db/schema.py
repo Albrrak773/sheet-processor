@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
+from sqlalchemy import JSON, Column
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -25,6 +27,17 @@ class Header(SQLModel, table=True):
     aliases: list[HeaderAlias] = Relationship(
         sa_relationship=relationship("HeaderAlias", back_populates="header")
     )
+
+
+class ValidationSession(SQLModel, table=True):
+    __tablename__ = "sessions"  # type: ignore[assignment]
+    id: str = Field(primary_key=True)
+    user_id: str = Field(index=True)
+    title: str
+    original_csv: str
+    data: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))  # type: ignore[assignment]
+    created_at: datetime
+    updated_at: datetime
 
 
 class HeaderCreate(SQLModel):
@@ -53,3 +66,30 @@ class HeaderWithAliases(SQLModel):
     id: int
     name: str
     aliases: list[HeaderAliasRead]
+
+
+class SessionCreate(SQLModel):
+    title: str | None = None
+    original_csv: str
+    data: list[dict[str, Any]]
+
+
+class SessionUpdate(SQLModel):
+    title: str | None = None
+    data: list[dict[str, Any]] | None = None
+
+
+class SessionRead(SQLModel):
+    id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class SessionDetail(SQLModel):
+    id: str
+    title: str
+    original_csv: str
+    data: list[dict[str, Any]]
+    created_at: datetime
+    updated_at: datetime
