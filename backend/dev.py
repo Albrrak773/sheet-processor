@@ -25,14 +25,6 @@ def ensure_venv() -> None:
             sys.exit(1)
 
 
-def load_env() -> dict[str, str]:
-    from dotenv import load_dotenv
-
-    env_path = Path(__file__).parent / ".env"
-    load_dotenv(env_path)
-    return dict(os.environ)
-
-
 def is_docker_running() -> bool:
     try:
         result = subprocess.run(
@@ -125,33 +117,24 @@ def main() -> None:
     project_root = Path(__file__).parent
     os.chdir(project_root)
 
-    env = load_env()
-    environment = env.get("ENVIRONMENT", "development").lower()
-    is_development = environment == "development"
+    if not is_docker_running():
+        print("Docker is not running. Please start Docker first.")
+        sys.exit(1)
 
-    print(f"Environment: {environment}")
-
-    if is_development:
-        if not is_docker_running():
-            print("Docker is not running. Please start Docker first.")
-            sys.exit(1)
-
-        if not is_mysql_container_running():
-            start_mysql()
-            wait_for_mysql()
-        else:
-            print("MySQL container is already running.")
+    if not is_mysql_container_running():
+        start_mysql()
+        wait_for_mysql()
+    else:
+        print("MySQL container is already running.")
 
     print("\nDatabase tables will be created automatically on startup.")
-
     print("\nStarting FastAPI server on http://0.0.0.0:8000")
     print("Press CTRL+C to stop\n")
 
-    if is_development:
-        command = ["fastapi", "dev", "app/main.py"]
-    else:
-        command = ["fastapi", "run", "app/main.py"]
-    os.execvp("fastapi", command)
+    os.execvp(
+        "infisical",
+        ["infisical", "run", "--env=dev", "--path=/backend", "--", "fastapi", "dev", "app/main.py"],
+    )
 
 
 if __name__ == "__main__":
