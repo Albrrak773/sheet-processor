@@ -154,7 +154,7 @@ function SessionList() {
                   </TooltipTrigger>
                   <TooltipContent side="right">{session.title}</TooltipContent>
                 </Tooltip>
-                <div className="absolute end-1 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 group-hover/menu-item:opacity-100">
+                <div className="absolute inset-e-1 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 group-hover/menu-item:opacity-100">
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -289,7 +289,10 @@ export function AppSidebar({ children }: AppSidebarProps) {
       <Sidebar>
         <SidebarHeader className="flex flex-row items-center justify-between">
           <SidebarTrigger />
-          <span className="font-semibold">Sheet Processor</span>
+          <div className="flex items-center gap-2">
+            <img src="/favicon-32x32.png" alt="" className="size-5" />
+            <span className="font-semibold">Sheet Processor</span>
+          </div>
           <div className="w-8" />
         </SidebarHeader>
         <SidebarContent>
@@ -328,6 +331,7 @@ export function AppSidebar({ children }: AppSidebarProps) {
       <SidebarInset>
         <header className="flex h-12 items-center gap-2 border-b px-4 md:hidden">
           <SidebarTrigger />
+          <img src="/favicon-32x32.png" alt="" className="size-5" />
           <span className="font-semibold">Sheet Processor</span>
         </header>
         <main className="flex-1">
