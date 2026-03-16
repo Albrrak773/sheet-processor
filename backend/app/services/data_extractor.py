@@ -85,7 +85,7 @@ def extract_from_raw(data: str) -> ExtractionResult:
     df = _detect_and_parse_raw(data)
     df = _normalize_columns(df)
 
-    return ExtractionResult(_dataframe_to_rows(df), data)
+    return ExtractionResult(_dataframe_to_rows(df), df.to_csv(index=False))
 
 
 def _extract_sheet_id(url: HttpUrl) -> str | None:
