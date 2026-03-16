@@ -5,6 +5,11 @@ import { FileUploadInput } from "./file-upload-input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { detectLinkType } from "@/lib/url-detector"
 
 interface InputTabsProps {
@@ -65,18 +70,36 @@ function InputTabs({
               disabled={isLoading}
               onRestrictedChange={setIsLinkRestricted}
             />
-            <Button
-              onClick={handleLinkSubmit}
-              disabled={
-                isLoading ||
-                isLinkRestricted ||
-                !linkValue.trim() ||
-                detectLinkType(linkValue) === "unknown"
-              }
-              className="w-full"
-            >
-              {isLoading ? "Validating..." : "Validate"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block w-full">
+                  <Button
+                    onClick={handleLinkSubmit}
+                    disabled={
+                      isLoading ||
+                      isLinkRestricted ||
+                      !linkValue.trim() ||
+                      detectLinkType(linkValue) === "unknown"
+                    }
+                    className="w-full"
+                  >
+                    {isLoading ? "Validating..." : "Validate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isLoading && !isLinkRestricted && !linkValue.trim() && (
+                <TooltipContent>Enter a link to validate</TooltipContent>
+              )}
+              {!isLoading &&
+                !isLinkRestricted &&
+                linkValue.trim() &&
+                detectLinkType(linkValue) === "unknown" && (
+                  <TooltipContent>Unsupported link type</TooltipContent>
+                )}
+              {!isLoading && isLinkRestricted && (
+                <TooltipContent>This link type is restricted</TooltipContent>
+              )}
+            </Tooltip>
           </TabsContent>
 
           <TabsContent value="raw" className="space-y-4">
@@ -85,13 +108,22 @@ function InputTabs({
               onChange={setRawValue}
               disabled={isLoading}
             />
-            <Button
-              onClick={handleRawSubmit}
-              disabled={isLoading || !rawValue.trim()}
-              className="w-full"
-            >
-              {isLoading ? "Validating..." : "Validate"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block w-full">
+                  <Button
+                    onClick={handleRawSubmit}
+                    disabled={isLoading || !rawValue.trim()}
+                    className="w-full"
+                  >
+                    {isLoading ? "Validating..." : "Validate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isLoading && !rawValue.trim() && (
+                <TooltipContent>Enter data to validate</TooltipContent>
+              )}
+            </Tooltip>
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4">
@@ -100,13 +132,24 @@ function InputTabs({
               onFileSelect={setFile}
               disabled={isLoading}
             />
-            <Button
-              onClick={handleFileSubmit}
-              disabled={isLoading || !file}
-              className="w-full"
-            >
-              {isLoading ? "Uploading & Validating..." : "Upload & Validate"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block w-full">
+                  <Button
+                    onClick={handleFileSubmit}
+                    disabled={isLoading || !file}
+                    className="w-full"
+                  >
+                    {isLoading
+                      ? "Uploading & Validating..."
+                      : "Upload & Validate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isLoading && !file && (
+                <TooltipContent>Select a file to upload</TooltipContent>
+              )}
+            </Tooltip>
           </TabsContent>
         </Tabs>
       </CardContent>

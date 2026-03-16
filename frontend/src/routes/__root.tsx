@@ -14,6 +14,7 @@ import type { QueryClient } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { AppSidebar } from "@/components/app-sidebar"
+import { ThemeProvider } from "@/components/theme-provider"
 
 interface RouterContext {
   queryClient: QueryClient
@@ -54,9 +55,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         </head>
         <body>
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <AppSidebar>{children}</AppSidebar>
-            </TooltipProvider>
+            <ThemeProvider>
+              <TooltipProvider>
+                <AppSidebar>{children}</AppSidebar>
+              </TooltipProvider>
+            </ThemeProvider>
             <Toaster />
             <ReactQueryDevtools buttonPosition="bottom-left" />
           </QueryClientProvider>

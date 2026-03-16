@@ -3,7 +3,6 @@ name: shadcn
 description: Manages shadcn components and projects — adding, searching, fixing, debugging, styling, and composing UI. Provides project context, component docs, and usage examples. Applies when working with shadcn/ui, component registries, presets, --preset codes, or any project with a components.json file. Also triggers for "shadcn init", "create an app with --preset", or "switch to --preset".
 user-invocable: false
 ---
-
 # shadcn/ui
 
 A framework for building ui, components and design systems. Components are added as source code to the user's project via the CLI.
@@ -119,21 +118,21 @@ These are the most common patterns that differentiate correct shadcn/ui code. Fo
 
 ## Component Selection
 
-| Need                       | Use                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| Button/action              | `Button` with appropriate variant                                                                   |
-| Form inputs                | `Input`, `Select`, `Combobox`, `Switch`, `Checkbox`, `RadioGroup`, `Textarea`, `InputOTP`, `Slider` |
-| Toggle between 2–5 options | `ToggleGroup` + `ToggleGroupItem`                                                                   |
-| Data display               | `Table`, `Card`, `Badge`, `Avatar`                                                                  |
-| Navigation                 | `Sidebar`, `NavigationMenu`, `Breadcrumb`, `Tabs`, `Pagination`                                     |
-| Overlays                   | `Dialog` (modal), `Sheet` (side panel), `Drawer` (bottom sheet), `AlertDialog` (confirmation)       |
-| Feedback                   | `sonner` (toast), `Alert`, `Progress`, `Skeleton`, `Spinner`                                        |
-| Command palette            | `Command` inside `Dialog`                                                                           |
-| Charts                     | `Chart` (wraps Recharts)                                                                            |
-| Layout                     | `Card`, `Separator`, `Resizable`, `ScrollArea`, `Accordion`, `Collapsible`                          |
-| Empty states               | `Empty`                                                                                             |
-| Menus                      | `DropdownMenu`, `ContextMenu`, `Menubar`                                                            |
-| Tooltips/info              | `Tooltip`, `HoverCard`, `Popover`                                                                   |
+| Need                        | Use                                                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Button/action               | `Button` with appropriate variant                                                                                   |
+| Form inputs                 | `Input`, `Select`, `Combobox`, `Switch`, `Checkbox`, `RadioGroup`, `Textarea`, `InputOTP`, `Slider` |
+| Toggle between 2–5 options | `ToggleGroup` + `ToggleGroupItem`                                                                                 |
+| Data display                | `Table`, `Card`, `Badge`, `Avatar`                                                                            |
+| Navigation                  | `Sidebar`, `NavigationMenu`, `Breadcrumb`, `Tabs`, `Pagination`                                             |
+| Overlays                    | `Dialog` (modal), `Sheet` (side panel), `Drawer` (bottom sheet), `AlertDialog` (confirmation)                 |
+| Feedback                    | `sonner` (toast), `Alert`, `Progress`, `Skeleton`, `Spinner`                                                |
+| Command palette             | `Command` inside `Dialog`                                                                                         |
+| Charts                      | `Chart` (wraps Recharts)                                                                                            |
+| Layout                      | `Card`, `Separator`, `Resizable`, `ScrollArea`, `Accordion`, `Collapsible`                                |
+| Empty states                | `Empty`                                                                                                             |
+| Menus                       | `DropdownMenu`, `ContextMenu`, `Menubar`                                                                        |
+| Tooltips/info               | `Tooltip`, `HoverCard`, `Popover`                                                                               |
 
 ## Key Fields
 

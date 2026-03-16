@@ -172,6 +172,6 @@ function HomePage() {
 
 ## Notes
 
-- This is a fresh TanStack Start project with minimal setup
 - The `routeTree.gen.ts` file is auto-generated - do not edit
 - Use the TanStack DevTools for debugging (included in dev mode)
+- always respect lint errors and don't ignore them.

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type { RowData, TableRowData, ValidationResponse } from "@/lib/types"
@@ -18,7 +18,6 @@ export const Route = createFileRoute("/sessions/$id")({
 
 function SessionPage() {
   const { id } = Route.useParams()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const revalidate = useValidateFromRaw()
 
@@ -160,9 +159,6 @@ function SessionPage() {
         </div>
         <div className="flex gap-2">
           {hasChanges && <Button onClick={handleSave}>Save Changes</Button>}
-          <Button variant="outline" onClick={() => navigate({ to: "/" })}>
-            New Session
-          </Button>
         </div>
       </div>
 

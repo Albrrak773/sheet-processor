@@ -46,6 +46,7 @@ import {
   setAuthGetter,
   updateSession,
 } from "@/lib/api-client"
+import { ModeToggle } from "@/components/mode-toggle"
 
 interface AppSidebarProps {
   children: React.ReactNode
@@ -237,8 +238,9 @@ function SidebarFooterContent() {
 
   if (state === "collapsed") {
     return (
-      <div className="flex justify-center p-2">
+      <div className="flex flex-col items-center gap-2 p-2">
         <UserButton />
+        <ModeToggle />
       </div>
     )
   }
@@ -247,7 +249,7 @@ function SidebarFooterContent() {
     <div className="flex items-center gap-3 p-2">
       <UserButton />
       {user && (
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-medium">
             {user.fullName || user.username || "User"}
           </span>
@@ -256,6 +258,7 @@ function SidebarFooterContent() {
           </span>
         </div>
       )}
+      <ModeToggle />
     </div>
   )
 }
