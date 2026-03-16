@@ -1,20 +1,38 @@
 import type { RowData } from "./types"
 
+function collectHeaders(rows: Array<RowData>): Array<string> {
+  const headerSet = new Set<string>()
+  for (const row of rows) {
+    Object.keys(row).forEach((key) => {
+      if (!key.startsWith("_")) {
+        headerSet.add(key)
+      }
+    })
+  }
+  return Array.from(headerSet)
+}
+
 export function rowsToTsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
-  const headers = Object.keys(rows[0]).filter((h) => !h.startsWith("_"))
+  const headers = collectHeaders(rows)
+  const escapeField = (val: string) => {
+    if (val.includes("\t") || val.includes("\n") || val.includes("\r") || val.includes('"')) {
+      return `"${val.replace(/"/g, '""')}"`
+    }
+    return val
+  }
   const lines = [headers.join("\t")]
   for (const row of rows) {
-    lines.push(headers.map((h) => String(row[h] ?? "")).join("\t"))
+    lines.push(headers.map((h) => escapeField(String(row[h] ?? ""))).join("\t"))
   }
   return lines.join("\n")
 }
 
 export function rowsToCsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
-  const headers = Object.keys(rows[0]).filter((h) => !h.startsWith("_"))
+  const headers = collectHeaders(rows)
   const escapeField = (val: string) => {
-    if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+    if (val.includes(",") || val.includes('"') || val.includes("\n") || val.includes("\r")) {
       return `"${val.replace(/"/g, '""')}"`
     }
     return val

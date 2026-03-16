@@ -49,12 +49,8 @@ function SessionPage() {
 
       if (!initialValidationDone.current) {
         initialValidationDone.current = true
-        const dataWithoutRowNum: Array<RowData> = dataWithRowNum.map(
-          ({ _rowNum: _, ...rest }) => rest
-        )
-        const tsv = rowsToTsv(dataWithoutRowNum)
         revalidate.mutate(
-          { rawData: tsv },
+          { rawData: session.original_csv },
           {
             onSuccess: (result) => {
               setValidationResult(result)
