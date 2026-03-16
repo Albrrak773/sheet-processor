@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import {
   Show,
   SignInButton,
@@ -54,6 +54,8 @@ interface AppSidebarProps {
 function SessionList() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const params = useParams({ from: "/sessions/$id", shouldThrow: false })
+  const currentSessionId = params?.id
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] =
@@ -130,6 +132,7 @@ function SessionList() {
             {sessions.map((session) => (
               <SidebarMenuItem key={session.id}>
                 <SidebarMenuButton
+                  isActive={session.id === currentSessionId}
                   onClick={() =>
                     navigate({
                       to: "/sessions/$id",

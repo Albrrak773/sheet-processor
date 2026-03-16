@@ -34,6 +34,13 @@ function SessionPage() {
   const initialValidationDone = React.useRef(false)
 
   React.useEffect(() => {
+    setData([])
+    setValidationResult(null)
+    setHasChanges(false)
+    initialValidationDone.current = false
+  }, [id])
+
+  React.useEffect(() => {
     if (session) {
       const dataWithRowNum = session.data.map((row, index) => ({
         ...row,

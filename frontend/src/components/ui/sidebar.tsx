@@ -287,8 +287,18 @@ function SidebarFloatingTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar, state, isMobile } = useSidebar()
+  const [isVisible, setIsVisible] = React.useState(false)
 
-  if (isMobile || state === "expanded") {
+  React.useEffect(() => {
+    if (state === "collapsed" && !isMobile) {
+      const timer = setTimeout(() => setIsVisible(true), 200)
+      return () => clearTimeout(timer)
+    } else {
+      setIsVisible(false)
+    }
+  }, [state, isMobile])
+
+  if (isMobile || !isVisible) {
     return null
   }
 
