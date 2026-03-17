@@ -11,7 +11,7 @@ from app.canonical import (
 from app.models import ColumnName, InvalidRow, RowData
 
 
-def validate_all_rows(rows: list[RowData]) -> tuple[list[InvalidRow], list[str]]:
+def validate_all_rows(rows: list[RowData], ignore_headers: list[str]) -> tuple[list[InvalidRow], list[str]]:
 
     invalid_rows: list[InvalidRow] = []
     details: list[str] = []
@@ -20,11 +20,39 @@ def validate_all_rows(rows: list[RowData]) -> tuple[list[InvalidRow], list[str]]
     optional_headers = get_optional_headers()
     required_columns = [col for col in canonical_headers if col not in optional_headers]
 
-    empty_columns = _find_empty_columns(rows, required_columns)
+    empty_column = get_empty_columns(rows, required_columns)
+
+    details.extend([f"required column '{col}' is empty" for col in empty_column])
+
+    invalid_rows.extend(validate_missing_values(rows, required_columns, empty_column))
+
+    invalid_rows.extend(validate_uni_id(rows))
+
+    return invalid_rows, details
+
+
+# ======== validation functions ========
+
+
+def get_empty_columns(rows: list[RowData], required_columns: list[ColumnName]) -> set[ColumnName]:
+    details: list[str] = []
+
+    empty_columns: set[ColumnName] = set()
+
+    for col in required_columns:
+        all_empty = all(_is_empty(get_row_value(row, col)) for row in rows)
+        if all_empty:
+            empty_columns.add(col)
+
     for col in empty_columns:
         input_name = _get_input_header(rows[0], col)
         details.append(f"column '{input_name}' is empty")
+    return empty_columns
 
+
+def validate_missing_values(rows: list[RowData], required_columns: list[ColumnName], empty_columns: set[ColumnName]) -> list[InvalidRow]:
+
+    invalid_rows: list[InvalidRow] = []
     for row_idx, row in enumerate(rows):
         missing_fields: list[str] = []
         for col in required_columns:
@@ -43,10 +71,7 @@ def validate_all_rows(rows: list[RowData]) -> tuple[list[InvalidRow], list[str]]
                     reason=f"row {row_idx + 2}: missing {', '.join(missing_fields)}",
                 )
             )
-
-    invalid_rows.extend(validate_uni_id(rows))
-
-    return invalid_rows, details
+    return invalid_rows
 
 
 def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
@@ -83,18 +108,7 @@ def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
     return invalid_rows
 
 
-def _find_empty_columns(
-    rows: list[RowData],
-    required_columns: list[ColumnName],
-) -> set[ColumnName]:
-    empty_columns: set[ColumnName] = set()
-
-    for col in required_columns:
-        all_empty = all(_is_empty(get_row_value(row, col)) for row in rows)
-        if all_empty:
-            empty_columns.add(col)
-
-    return empty_columns
+# ======== helper functions ========
 
 
 def _get_input_header(row: RowData, canonical_col: ColumnName) -> str:

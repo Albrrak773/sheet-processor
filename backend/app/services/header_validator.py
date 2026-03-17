@@ -8,9 +8,7 @@ def validate_headers(
     rows: list[RowData],
     ignore_headers: list[str],
 ) -> tuple[bool, list[ColumnName], list[str], list[str]]:
-    canonical_headers = get_canonical_headers()
-    if not rows:
-        return False, list(canonical_headers), [], []
+    assert len(rows) > 0, "No data rows to validate headers"
 
     present_canonical = _get_present_canonical(rows[0])
     present_columns = _format_present_columns(rows[0])

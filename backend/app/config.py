@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     # Clerk authentication
     clerk_jwks_url: str = Field(default="")
 
+
     @property
     def r2_endpoint_url(self) -> str:
         return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
@@ -42,3 +44,11 @@ def get_clerk_config() -> ClerkConfig:
 
 def get_clerk_auth_guard() -> ClerkHTTPBearer:
     return ClerkHTTPBearer(config=get_clerk_config(), add_state=True)
+
+def get_uvicorn_logger() -> logging.Logger:
+    logger = logging.getLogger("uvicorn.error")
+    logger.info("Uvicorn logger initialized")
+
+    return logger
+
+logger = get_uvicorn_logger()

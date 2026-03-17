@@ -27,7 +27,6 @@ async def validate(
     raw_data: Annotated[str | None, Body(media_type="text/plain", description="Raw CSV/TSV data when data_source='raw'")] = None,
 ) -> ValidationResponse:
 
-
     # 1. validate source and extract data
     if ignore_header is None:
         ignore_header = []
@@ -50,16 +49,15 @@ async def validate(
             status_code=400,
             detail="Unsupported data source URL",
         )
-    
+
     rows = result.rows
     raw_csv = result.raw_csv
 
     # 2. validate headers
     is_valid, missing_columns, present_columns, unmapped_columns = validate_headers(rows, ignore_header)
 
-
     # 3. validate rows
-    invalid_rows, details = validate_all_rows(rows)
+    invalid_rows, details = validate_all_rows(rows, ignore_header)
 
     if missing_columns or invalid_rows or details:
         is_valid = False
@@ -76,4 +74,3 @@ async def validate(
         data=rows,
         raw_csv=raw_csv,
     )
-
