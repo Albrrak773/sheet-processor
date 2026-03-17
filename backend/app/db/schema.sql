@@ -65,6 +65,18 @@ CREATE TABLE `names` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+CREATE TABLE `sessions` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `original_csv` longtext NOT NULL,
+  `data` json NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_updated` (`user_id`,`updated_at` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 --
 -- Dumping routines for database 'sheet_processor'
 --
