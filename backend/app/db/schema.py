@@ -110,3 +110,23 @@ class GenderAliasRead(SQLModel):
     id: int
     aliase_type: str
     alias: str
+
+
+class Name(SQLModel, table=True):
+    __tablename__ = "names"  # type: ignore[assignment]
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True)
+    gender: str
+
+
+class NameRead(SQLModel):
+    id: int
+    name: str
+    gender: str
+
+
+class NameBatchResponse(SQLModel):
+    created: int
+    skipped: int
+    created_names: list[str]
+    skipped_names: list[str]

@@ -9,7 +9,7 @@ from app.canonical import (
     resolve_column_key,
 )
 from app.gender_cache import get_gender_alias_map
-from app.models import ColumnName, InvalidRow, InvalidType, RowData
+from app.models import ColumnName, InvalidRow, RowData
 
 
 def validate_all_rows(rows: list[RowData], ignore_headers: list[str]) -> tuple[list[InvalidRow], list[str]]:
