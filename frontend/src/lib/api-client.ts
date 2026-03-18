@@ -106,7 +106,8 @@ export async function createAlias(
     `/aliases/${encodeURIComponent(header)}/${encodeURIComponent(newAlias)}`,
     {
       method: "POST",
-    }
+    },
+    true
   )
 }
 
@@ -195,7 +196,7 @@ export async function createGenderAlias(
   alias: string
 ): Promise<void> {
   const endpoint = `/genders/${gender.toLowerCase()}/${encodeURIComponent(alias)}`
-  await request(endpoint, { method: "POST" })
+  await request(endpoint, { method: "POST" }, true)
 }
 
 // Header Aliases
@@ -204,18 +205,22 @@ export async function listHeaderAliases(): Promise<Array<HeaderAliasRead>> {
 }
 
 export async function deleteHeaderAlias(aliasId: number): Promise<void> {
-  await request(`/aliases/${aliasId}`, { method: "DELETE" })
+  await request(`/aliases/${aliasId}`, { method: "DELETE" }, true)
 }
 
 export async function updateHeaderAlias(
   aliasId: number,
   aliasName: string
 ): Promise<HeaderAliasRead> {
-  return request<HeaderAliasRead>(`/aliases/${aliasId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ alias_name: aliasName }),
-  })
+  return request<HeaderAliasRead>(
+    `/aliases/${aliasId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ alias_name: aliasName }),
+    },
+    true
+  )
 }
 
 // Gender Aliases
@@ -224,18 +229,22 @@ export async function listGenderAliases(): Promise<Array<GenderAliasRead>> {
 }
 
 export async function deleteGenderAlias(aliasId: number): Promise<void> {
-  await request(`/genders/${aliasId}`, { method: "DELETE" })
+  await request(`/genders/${aliasId}`, { method: "DELETE" }, true)
 }
 
 export async function updateGenderAlias(
   aliasId: number,
   alias: string
 ): Promise<GenderAliasRead> {
-  return request<GenderAliasRead>(`/genders/${aliasId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ alias }),
-  })
+  return request<GenderAliasRead>(
+    `/genders/${aliasId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ alias }),
+    },
+    true
+  )
 }
 
 // Names
@@ -247,14 +256,18 @@ export async function updateNameGender(
   nameId: number,
   gender: GenderValue
 ): Promise<NameRead> {
-  return request<NameRead>(`/genders/names/${nameId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gender }),
-  })
+  return request<NameRead>(
+    `/genders/names/${nameId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gender }),
+    },
+    true
+  )
 }
 
 // Members
 export async function listMembers(): Promise<Array<MemberRead>> {
-  return request<Array<MemberRead>>("/uni-id")
+  return request<Array<MemberRead>>("/uni-id", {}, true)
 }

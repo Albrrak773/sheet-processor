@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.database import get_session
+from app.auth import require_admin
 from app.db import members as db
+from app.db.database import get_session
 from app.db.schema import MemberLookupRequest, MemberRead
 
 router = APIRouter(prefix="/uni-id", tags=["members"])
@@ -16,6 +18,7 @@ logger = logging.getLogger(__name__)
 @router.get("", response_model=list[MemberRead])
 async def list_members(
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> list[MemberRead]:
     try:
         members = await db.list_members(session)
@@ -42,10 +45,11 @@ async def list_members(
 
 @router.post("/lookup", response_model=MemberRead)
 async def lookup_uni_id(
-    request: MemberLookupRequest,
+    request_body: MemberLookupRequest,
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> MemberRead:
-    if not any([request.name, request.email, request.phone_number]):
+    if not any([request_body.name, request_body.email, request_body.phone_number]):
         raise HTTPException(
             status_code=400,
             detail="At least one of name, email, or phone_number must be provided",
@@ -54,9 +58,9 @@ async def lookup_uni_id(
     try:
         member = await db.lookup_member(
             session,
-            name=request.name,
-            email=request.email,
-            phone_number=request.phone_number,
+            name=request_body.name,
+            email=request_body.email,
+            phone_number=request_body.phone_number,
         )
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")

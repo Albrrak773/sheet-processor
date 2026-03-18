@@ -43,6 +43,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -60,6 +61,7 @@ import {
   updateSession,
 } from "@/lib/api-client"
 import { ModeToggle } from "@/components/mode-toggle"
+import { useIsAdmin } from "@/hooks/use-role"
 
 interface AppSidebarProps {
   children: React.ReactNode
@@ -253,6 +255,7 @@ function SessionList() {
 function SidebarFooterContent() {
   const { user } = useUser()
   const { state } = useSidebar()
+  const isAdmin = useIsAdmin()
 
   if (state === "collapsed") {
     return (
@@ -268,9 +271,16 @@ function SidebarFooterContent() {
       <UserButton />
       {user && (
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-medium">
-            {user.fullName || user.username || "User"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium">
+              {user.fullName || user.username || "User"}
+            </span>
+            {isAdmin && (
+              <Badge variant="secondary" className="text-xs">
+                Admin
+              </Badge>
+            )}
+          </div>
           <span className="truncate text-xs text-muted-foreground">
             {user.primaryEmailAddress?.emailAddress}
           </span>
@@ -284,6 +294,7 @@ function SidebarFooterContent() {
 export function AppSidebar({ children }: AppSidebarProps) {
   const navigate = useNavigate()
   const { getToken } = useAuth()
+  const isAdmin = useIsAdmin()
 
   React.useEffect(() => {
     setAuthGetter(async () => {
@@ -316,27 +327,27 @@ export function AppSidebar({ children }: AppSidebarProps) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <Show when="signed-in">
-            <SidebarGroup>
-              <SidebarGroupLabel>Admin</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate({ to: "/admin" })}
-                    >
-                      <HugeiconsIcon icon={Settings01Icon} className="size-4" />
-                      <span>Admin Panel</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate({ to: "/admin/aliases" })}
-                    >
-                      <HugeiconsIcon icon={TextIcon} className="size-4" />
-                      <span>Manage Aliases</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+          {/* Admin pages - visible to everyone but some features are admin-only */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate({ to: "/admin" })}>
+                    <HugeiconsIcon icon={Settings01Icon} className="size-4" />
+                    <span>Admin Panel</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate({ to: "/admin/aliases" })}
+                  >
+                    <HugeiconsIcon icon={TextIcon} className="size-4" />
+                    <span>Manage Aliases</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {/* Members page is admin-only */}
+                {isAdmin && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => navigate({ to: "/admin/members" })}
@@ -348,17 +359,20 @@ export function AppSidebar({ children }: AppSidebarProps) {
                       <span>Search Members</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate({ to: "/admin/gender" })}
-                    >
-                      <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
-                      <span>Find Gender</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate({ to: "/admin/gender" })}
+                  >
+                    <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
+                    <span>Find Gender</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          {/* Sessions list - requires sign-in for persistence */}
+          <Show when="signed-in">
             <SessionList />
           </Show>
         </SidebarContent>
@@ -384,22 +398,7 @@ export function AppSidebar({ children }: AppSidebarProps) {
           <img src="/favicon-32x32.png" alt="" className="size-5" />
           <span className="font-semibold">Sheet Processor</span>
         </header>
-        <main className="flex-1">
-          <Show when="signed-in">{children}</Show>
-          <Show when="signed-out" fallback={null}>
-            <div className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center gap-4">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold">Sheet Processor</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Sign in to validate and process your spreadsheet data
-                </p>
-              </div>
-              <SignInButton mode="modal">
-                <Button size="lg">Sign In</Button>
-              </SignInButton>
-            </div>
-          </Show>
-        </main>
+        <main className="flex-1">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

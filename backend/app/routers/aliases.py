@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.auth import require_admin
 from app.canonical import refresh_cache
 from app.db.database import get_session
 from app.db.schema import (
@@ -22,6 +25,7 @@ router = APIRouter(prefix="/aliases", tags=["aliases"])
 @router.post("/headers/seed", status_code=201)
 async def seed_headers(
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> dict[str, str]:
     seeded: list[str] = []
 
@@ -125,6 +129,7 @@ async def create_alias(
 async def delete_alias(
     alias_id: int,
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> None:
     stmt = select(HeaderAlias).where(HeaderAlias.id == alias_id)  # type: ignore[arg-type]
     result = await session.execute(stmt)
@@ -142,6 +147,7 @@ async def update_alias(
     alias_id: int,
     data: HeaderAliasUpdate,
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> HeaderAliasRead:
     stmt = (
         select(HeaderAlias)

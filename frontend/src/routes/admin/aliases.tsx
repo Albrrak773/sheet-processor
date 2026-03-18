@@ -52,6 +52,8 @@ import {
   GenderAliasesTabSkeleton,
   HeaderAliasesTabSkeleton,
 } from "@/components/skeletons/aliases-page-skeleton"
+import { useIsAdmin } from "@/hooks/use-role"
+import { useAuth } from "@clerk/tanstack-react-start"
 
 export const Route = createFileRoute("/admin/aliases")({
   component: AliasesPage,
@@ -59,6 +61,8 @@ export const Route = createFileRoute("/admin/aliases")({
 
 function HeaderAliasesTab() {
   const queryClient = useQueryClient()
+  const isAdmin = useIsAdmin()
+  const { isSignedIn } = useAuth()
   const [newAlias, setNewAlias] = React.useState("")
   const [selectedHeader, setSelectedHeader] = React.useState("")
   const [deleteTarget, setDeleteTarget] =
@@ -157,44 +161,48 @@ function HeaderAliasesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Add New Alias Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Alias</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Select value={selectedHeader} onValueChange={setSelectedHeader}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select header" />
-              </SelectTrigger>
-              <SelectContent>
-                {headers.map((h: Header) => (
-                  <SelectItem key={h.id} value={h.name}>
-                    {h.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="New alias name"
-              value={newAlias}
-              onChange={(e) => setNewAlias(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleCreate}
-              disabled={
-                !selectedHeader || !newAlias.trim() || createMutation.isPending
-              }
-            >
-              <HugeiconsIcon icon={Add01Icon} className="size-4" />
-              Add
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Add New Alias Card - Signed in users only */}
+      {isSignedIn && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Alias</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Select value={selectedHeader} onValueChange={setSelectedHeader}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select header" />
+                </SelectTrigger>
+                <SelectContent>
+                  {headers.map((h: Header) => (
+                    <SelectItem key={h.id} value={h.name}>
+                      {h.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="New alias name"
+                value={newAlias}
+                onChange={(e) => setNewAlias(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !selectedHeader ||
+                  !newAlias.trim() ||
+                  createMutation.isPending
+                }
+              >
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Header Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -211,26 +219,33 @@ function HeaderAliasesTab() {
                   <Badge
                     key={alias.id}
                     variant="secondary"
-                    className="group cursor-pointer gap-1 px-2 py-1"
+                    className={`gap-1 px-2 py-1 ${isAdmin ? "group cursor-pointer" : ""}`}
                   >
                     <span>{alias.alias_name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(alias)}
-                      className="ml-1 opacity-60 hover:opacity-100"
-                    >
-                      <HugeiconsIcon
-                        icon={PencilEdit01Icon}
-                        className="size-3"
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(alias)}
-                      className="opacity-60 hover:opacity-100"
-                    >
-                      <HugeiconsIcon icon={Delete01Icon} className="size-3" />
-                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(alias)}
+                          className="ml-1 opacity-60 hover:opacity-100"
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-3"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(alias)}
+                          className="opacity-60 hover:opacity-100"
+                        >
+                          <HugeiconsIcon
+                            icon={Delete01Icon}
+                            className="size-3"
+                          />
+                        </button>
+                      </>
+                    )}
                   </Badge>
                 ))}
                 {headerAliases.length === 0 && (
@@ -325,6 +340,8 @@ function HeaderAliasesTab() {
 
 function GenderAliasesTab() {
   const queryClient = useQueryClient()
+  const isAdmin = useIsAdmin()
+  const { isSignedIn } = useAuth()
   const [newAlias, setNewAlias] = React.useState("")
   const [selectedGender, setSelectedGender] = React.useState<GenderValue | "">(
     ""
@@ -414,44 +431,48 @@ function GenderAliasesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Add New Alias Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Gender Alias</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Select
-              value={selectedGender}
-              onValueChange={(v) => setSelectedGender(v as GenderValue)}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="New alias (e.g., 'M', 'ذكر')"
-              value={newAlias}
-              onChange={(e) => setNewAlias(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleCreate}
-              disabled={
-                !selectedGender || !newAlias.trim() || createMutation.isPending
-              }
-            >
-              <HugeiconsIcon icon={Add01Icon} className="size-4" />
-              Add
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Add New Alias Card - Signed in users only */}
+      {isSignedIn && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Gender Alias</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Select
+                value={selectedGender}
+                onValueChange={(v) => setSelectedGender(v as GenderValue)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="New alias (e.g., 'M', 'ذكر')"
+                value={newAlias}
+                onChange={(e) => setNewAlias(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !selectedGender ||
+                  !newAlias.trim() ||
+                  createMutation.isPending
+                }
+              >
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Gender Cards - Two Column Layout */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -467,23 +488,30 @@ function GenderAliasesTab() {
                 <Badge
                   key={alias.id}
                   variant="secondary"
-                  className="group cursor-pointer gap-1 px-2 py-1"
+                  className={`gap-1 px-2 py-1 ${isAdmin ? "group cursor-pointer" : ""}`}
                 >
                   <span>{alias.alias}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(alias)}
-                    className="ml-1 opacity-60 hover:opacity-100"
-                  >
-                    <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(alias)}
-                    className="opacity-60 hover:opacity-100"
-                  >
-                    <HugeiconsIcon icon={Delete01Icon} className="size-3" />
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(alias)}
+                        className="ml-1 opacity-60 hover:opacity-100"
+                      >
+                        <HugeiconsIcon
+                          icon={PencilEdit01Icon}
+                          className="size-3"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(alias)}
+                        className="opacity-60 hover:opacity-100"
+                      >
+                        <HugeiconsIcon icon={Delete01Icon} className="size-3" />
+                      </button>
+                    </>
+                  )}
                 </Badge>
               ))}
               {maleAliases.length === 0 && (
@@ -507,23 +535,30 @@ function GenderAliasesTab() {
                 <Badge
                   key={alias.id}
                   variant="secondary"
-                  className="group cursor-pointer gap-1 px-2 py-1"
+                  className={`gap-1 px-2 py-1 ${isAdmin ? "group cursor-pointer" : ""}`}
                 >
                   <span>{alias.alias}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(alias)}
-                    className="ml-1 opacity-60 hover:opacity-100"
-                  >
-                    <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(alias)}
-                    className="opacity-60 hover:opacity-100"
-                  >
-                    <HugeiconsIcon icon={Delete01Icon} className="size-3" />
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(alias)}
+                        className="ml-1 opacity-60 hover:opacity-100"
+                      >
+                        <HugeiconsIcon
+                          icon={PencilEdit01Icon}
+                          className="size-3"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(alias)}
+                        className="opacity-60 hover:opacity-100"
+                      >
+                        <HugeiconsIcon icon={Delete01Icon} className="size-3" />
+                      </button>
+                    </>
+                  )}
                 </Badge>
               ))}
               {femaleAliases.length === 0 && (

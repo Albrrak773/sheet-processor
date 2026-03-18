@@ -31,6 +31,7 @@ import {
   updateNameGender,
 } from "@/lib/api-client"
 import { NamesTableSkeleton } from "@/components/skeletons/gender-page-skeleton"
+import { useIsAdmin } from "@/hooks/use-role"
 
 export const Route = createFileRoute("/admin/gender")({
   component: GenderPage,
@@ -123,6 +124,7 @@ function GenderLookupCard() {
 
 function NamesTable() {
   const queryClient = useQueryClient()
+  const isAdmin = useIsAdmin()
   const [filter, setFilter] = React.useState("")
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE)
 
@@ -202,21 +204,29 @@ function NamesTable() {
               <TableRow key={name.id}>
                 <TableCell className="font-medium">{name.name}</TableCell>
                 <TableCell>
-                  <Select
-                    value={name.gender}
-                    onValueChange={(v) =>
-                      handleGenderChange(name.id, v as GenderValue)
-                    }
-                    disabled={updateMutation.isPending}
-                  >
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isAdmin ? (
+                    <Select
+                      value={name.gender}
+                      onValueChange={(v) =>
+                        handleGenderChange(name.id, v as GenderValue)
+                      }
+                      disabled={updateMutation.isPending}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge
+                      variant={name.gender === "Male" ? "default" : "secondary"}
+                    >
+                      {name.gender}
+                    </Badge>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

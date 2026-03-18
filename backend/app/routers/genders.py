@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 import re
 from enum import StrEnum
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import require_admin
 from app.db import genders as db
 from app.db.database import get_session
 from app.db.schema import GenderAliasRead, GenderAliasUpdate, NameBatchResponse, NameLookupResult, NameRead, NameUpdate
@@ -55,6 +57,7 @@ async def list_gender_aliases(
 async def delete_gender_alias(
     alias_id: int,
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> None:
     try:
         existing = await db.get_alias_by_id(session, alias_id)
@@ -74,6 +77,7 @@ async def update_gender_alias(
     alias_id: int,
     data: GenderAliasUpdate,
     session: AsyncSession = Depends(get_session),
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> GenderAliasRead:
     try:
         existing = await db.get_alias_by_id(session, alias_id)

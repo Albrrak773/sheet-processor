@@ -1,8 +1,13 @@
 import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { SignInButton } from "@clerk/tanstack-react-start"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, UserSearch01Icon } from "@hugeicons/core-free-icons"
+import {
+  AlertCircleIcon,
+  Search01Icon,
+  UserSearch01Icon,
+} from "@hugeicons/core-free-icons"
 
 import type { MemberRead } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +24,7 @@ import {
 } from "@/components/ui/table"
 import { listMembers } from "@/lib/api-client"
 import { MembersTableSkeleton } from "@/components/skeletons/members-page-skeleton"
+import { useIsAdmin } from "@/hooks/use-role"
 
 export const Route = createFileRoute("/admin/members")({
   component: MembersPage,
@@ -26,7 +32,34 @@ export const Route = createFileRoute("/admin/members")({
 
 const PAGE_SIZE = 100
 
-function MembersPage() {
+function AccessDenied() {
+  return (
+    <div className="container mx-auto flex min-h-[60vh] flex-col items-center justify-center px-4 py-8">
+      <Card className="max-w-md text-center">
+        <CardHeader>
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+            <HugeiconsIcon
+              icon={AlertCircleIcon}
+              className="size-8 text-destructive"
+            />
+          </div>
+          <CardTitle>Access Denied</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            This page requires administrator privileges. Please sign in with an
+            admin account to view member data.
+          </p>
+          <SignInButton mode="modal">
+            <Button>Sign In</Button>
+          </SignInButton>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function MembersContent() {
   const [search, setSearch] = React.useState("")
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE)
 
@@ -171,4 +204,14 @@ function MembersPage() {
       )}
     </div>
   )
+}
+
+function MembersPage() {
+  const isAdmin = useIsAdmin()
+
+  if (!isAdmin) {
+    return <AccessDenied />
+  }
+
+  return <MembersContent />
 }
