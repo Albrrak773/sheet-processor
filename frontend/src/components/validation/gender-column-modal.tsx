@@ -33,7 +33,10 @@ interface GenderColumnModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   data: Array<RowData>
-  onConfirm: (genderColumn: Record<string, GenderValue>, nameColumn: string) => void
+  onConfirm: (
+    genderColumn: Record<string, GenderValue>,
+    nameColumn: string
+  ) => void
 }
 
 function GenderColumnModal({
@@ -101,19 +104,21 @@ function GenderColumnModal({
           resultsMap.set(r.name, r)
         }
 
-        const newEntries: Array<GenderEntry> = uniqueFullNames.map((fullName) => {
-          const firstName = extractFirstName(fullName)
-          const normalizedFirstName = normalizeName(firstName)
-          const result = resultsMap.get(normalizedFirstName)
+        const newEntries: Array<GenderEntry> = uniqueFullNames.map(
+          (fullName) => {
+            const firstName = extractFirstName(fullName)
+            const normalizedFirstName = normalizeName(firstName)
+            const result = resultsMap.get(normalizedFirstName)
 
-          return {
-            fullName,
-            firstName: normalizedFirstName,
-            gender: result?.gender ?? null,
-            originalGender: result?.gender ?? null,
-            modified: false,
+            return {
+              fullName,
+              firstName: normalizedFirstName,
+              gender: result?.gender ?? null,
+              originalGender: result?.gender ?? null,
+              modified: false,
+            }
           }
-        })
+        )
         setEntries(newEntries)
         setIsLoading(false)
       },
@@ -211,20 +216,21 @@ function GenderColumnModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col">
         {step === "select" && (
           <>
             <DialogHeader>
               <DialogTitle>Create Gender Column</DialogTitle>
               <DialogDescription>
-                Choose the column that contains the names to look up genders for.
+                Choose the column that contains the names to look up genders
+                for.
               </DialogDescription>
             </DialogHeader>
 
             <div className="py-4">
               <label className="text-sm font-medium">Name Column:</label>
               <Select value={selectedColumn} onValueChange={setSelectedColumn}>
-                <SelectTrigger className="w-full mt-2">
+                <SelectTrigger className="mt-2 w-full">
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,12 +262,13 @@ function GenderColumnModal({
             <DialogHeader>
               <DialogTitle>Assign Genders</DialogTitle>
               <DialogDescription>
-                Review and assign genders to the names. All names must have a gender before confirming.
+                Review and assign genders to the names. All names must have a
+                gender before confirming.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-              <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex flex-1 flex-col gap-4 overflow-hidden">
+              <div className="flex flex-wrap items-center gap-4">
                 {hasUnidentified && (
                   <div className="flex items-center gap-2">
                     <Button
@@ -294,21 +301,23 @@ function GenderColumnModal({
                 </label>
               </div>
 
-              <div className="flex-1 overflow-auto border rounded-md">
+              <div className="flex-1 overflow-auto rounded-md border">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-40 text-muted-foreground">
+                  <div className="flex h-40 items-center justify-center text-muted-foreground">
                     Loading...
                   </div>
                 ) : filteredEntries.length === 0 ? (
-                  <div className="flex items-center justify-center h-40 text-muted-foreground">
+                  <div className="flex h-40 items-center justify-center text-muted-foreground">
                     No names found in selected column
                   </div>
                 ) : (
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/50 sticky top-0">
+                    <thead className="sticky top-0 bg-muted/50">
                       <tr>
-                        <th className="text-left p-2 font-medium">Name</th>
-                        <th className="text-left p-2 font-medium w-40">Gender</th>
+                        <th className="p-2 text-left font-medium">Name</th>
+                        <th className="w-40 p-2 text-left font-medium">
+                          Gender
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -317,13 +326,13 @@ function GenderColumnModal({
                           <td className="p-2">
                             <span
                               className={
-                                entry.modified ? "text-primary font-medium" : ""
+                                entry.modified ? "font-medium text-primary" : ""
                               }
                             >
                               {entry.fullName}
                             </span>
                             {entry.originalGender && entry.modified && (
-                              <span className="text-xs text-muted-foreground ml-2">
+                              <span className="ml-2 text-xs text-muted-foreground">
                                 (was {entry.originalGender})
                               </span>
                             )}

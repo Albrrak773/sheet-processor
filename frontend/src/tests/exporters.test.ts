@@ -17,35 +17,27 @@ describe("rowsToTsv", () => {
   })
 
   it("escapes tabs in cell values", () => {
-    const rows: Array<RowData> = [
-      { name: "Ali\tce", age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Ali\tce", age: "30" }]
     const result = rowsToTsv(rows)
-    expect(result).toBe("name\tage\n\"Ali\tce\"\t30")
+    expect(result).toBe('name\tage\n"Ali\tce"\t30')
   })
 
   it("escapes newlines in cell values", () => {
-    const rows: Array<RowData> = [
-      { name: "Ali\nce", age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Ali\nce", age: "30" }]
     const result = rowsToTsv(rows)
-    expect(result).toBe("name\tage\n\"Ali\nce\"\t30")
+    expect(result).toBe('name\tage\n"Ali\nce"\t30')
   })
 
   it("escapes carriage returns in cell values", () => {
-    const rows: Array<RowData> = [
-      { name: "Ali\rce", age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Ali\rce", age: "30" }]
     const result = rowsToTsv(rows)
-    expect(result).toBe("name\tage\n\"Ali\rce\"\t30")
+    expect(result).toBe('name\tage\n"Ali\rce"\t30')
   })
 
   it("escapes quotes in cell values by doubling them", () => {
-    const rows: Array<RowData> = [
-      { name: 'Ali"ce', age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: 'Ali"ce', age: "30" }]
     const result = rowsToTsv(rows)
-    expect(result).toBe("name\tage\n\"Ali\"\"ce\"\t30")
+    expect(result).toBe('name\tage\n"Ali""ce"\t30')
   })
 
   it("handles multi-line cell values (the reported bug)", () => {
@@ -56,7 +48,7 @@ describe("rowsToTsv", () => {
       },
     ]
     const result = rowsToTsv(rows)
-    expect(result).toBe("name\tcomment\nTest User\t\"Line 1\nLine 2\nLine 3\"")
+    expect(result).toBe('name\tcomment\nTest User\t"Line 1\nLine 2\nLine 3"')
   })
 
   it("handles Arabic text", () => {
@@ -82,25 +74,19 @@ describe("rowsToTsv", () => {
   })
 
   it("excludes underscore-prefixed columns", () => {
-    const rows: Array<RowData> = [
-      { name: "Alice", _rowNum: 1, age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Alice", _rowNum: 1, age: "30" }]
     const result = rowsToTsv(rows)
     expect(result).toBe("name\tage\nAlice\t30")
   })
 
   it("handles empty values", () => {
-    const rows: Array<RowData> = [
-      { name: "", age: "" },
-    ]
+    const rows: Array<RowData> = [{ name: "", age: "" }]
     const result = rowsToTsv(rows)
     expect(result).toBe("name\tage\n\t")
   })
 
   it("handles null and undefined values", () => {
-    const rows: Array<RowData> = [
-      { name: null, age: undefined },
-    ]
+    const rows: Array<RowData> = [{ name: null, age: undefined }]
     const result = rowsToTsv(rows)
     expect(result).toBe("name\tage\n\t")
   })
@@ -109,7 +95,8 @@ describe("rowsToTsv", () => {
     const rows: Array<RowData> = [
       {
         name: "شوق فهد الطاسان",
-        comment: "شغلل جبار والله \nالله يعطيكم العافيه التقديم ممتاز وتعاون البنات ممتاز شكرراً لكم 🩷🩷🩷🩷",
+        comment:
+          "شغلل جبار والله \nالله يعطيكم العافيه التقديم ممتاز وتعاون البنات ممتاز شكرراً لكم 🩷🩷🩷🩷",
       },
     ]
     const result = rowsToTsv(rows)
@@ -135,27 +122,21 @@ describe("rowsToCsv", () => {
   })
 
   it("escapes commas in cell values", () => {
-    const rows: Array<RowData> = [
-      { name: "Ali,ce", age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Ali,ce", age: "30" }]
     const result = rowsToCsv(rows)
-    expect(result).toBe("name,age\n\"Ali,ce\",30")
+    expect(result).toBe('name,age\n"Ali,ce",30')
   })
 
   it("escapes quotes in cell values by doubling them", () => {
-    const rows: Array<RowData> = [
-      { name: 'Ali"ce', age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: 'Ali"ce', age: "30" }]
     const result = rowsToCsv(rows)
-    expect(result).toBe("name,age\n\"Ali\"\"ce\",30")
+    expect(result).toBe('name,age\n"Ali""ce",30')
   })
 
   it("escapes newlines in cell values", () => {
-    const rows: Array<RowData> = [
-      { name: "Ali\nce", age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Ali\nce", age: "30" }]
     const result = rowsToCsv(rows)
-    expect(result).toBe("name,age\n\"Ali\nce\",30")
+    expect(result).toBe('name,age\n"Ali\nce",30')
   })
 
   it("collects headers from all rows", () => {
@@ -171,9 +152,7 @@ describe("rowsToCsv", () => {
   })
 
   it("excludes underscore-prefixed columns", () => {
-    const rows: Array<RowData> = [
-      { name: "Alice", _rowNum: 1, age: "30" },
-    ]
+    const rows: Array<RowData> = [{ name: "Alice", _rowNum: 1, age: "30" }]
     const result = rowsToCsv(rows)
     expect(result).toBe("name,age\nAlice,30")
   })

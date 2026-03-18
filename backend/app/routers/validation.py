@@ -14,6 +14,7 @@ from app.services.data_extractor import (
     is_file_url,
     is_published_sheet_url,
 )
+from app.services.gender_validator import validate_genders_metadata
 from app.services.header_validator import validate_headers
 from app.services.row_validator import validate_all_rows
 
@@ -59,7 +60,10 @@ async def validate(
     # 3. validate rows
     invalid_rows, details = validate_all_rows(rows, ignore_header)
 
-    if missing_columns or invalid_rows or details:
+    # 4. validate gender metadata
+    found_genders, missing_genders, unmapped_genders = validate_genders_metadata(rows)
+
+    if missing_columns or invalid_rows or details or unmapped_genders:
         is_valid = False
 
     return ValidationResponse(
@@ -73,4 +77,7 @@ async def validate(
         details=details,
         data=rows,
         raw_csv=raw_csv,
+        found_genders=found_genders,
+        missing_genders=missing_genders,
+        unmapped_genders=unmapped_genders,
     )

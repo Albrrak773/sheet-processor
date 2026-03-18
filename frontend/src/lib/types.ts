@@ -23,6 +23,9 @@ export interface ValidationResponse {
   details: Array<string>
   data: Array<RowData>
   raw_csv: string
+  found_genders: Array<string>
+  missing_genders: Array<string>
+  unmapped_genders: Array<UnmappedGender>
 }
 
 export interface HeaderAliasRead {
@@ -87,6 +90,11 @@ export interface SessionUpdate {
 }
 
 export type GenderValue = "Male" | "Female"
+
+export interface UnmappedGender {
+  value: string
+  count: number
+}
 
 export interface GenderLookupResult {
   name: string

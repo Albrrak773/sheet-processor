@@ -16,7 +16,12 @@ export function rowsToTsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
   const headers = collectHeaders(rows)
   const escapeField = (val: string) => {
-    if (val.includes("\t") || val.includes("\n") || val.includes("\r") || val.includes('"')) {
+    if (
+      val.includes("\t") ||
+      val.includes("\n") ||
+      val.includes("\r") ||
+      val.includes('"')
+    ) {
       return `"${val.replace(/"/g, '""')}"`
     }
     return val
@@ -32,7 +37,12 @@ export function rowsToCsv(rows: Array<RowData>): string {
   if (rows.length === 0) return ""
   const headers = collectHeaders(rows)
   const escapeField = (val: string) => {
-    if (val.includes(",") || val.includes('"') || val.includes("\n") || val.includes("\r")) {
+    if (
+      val.includes(",") ||
+      val.includes('"') ||
+      val.includes("\n") ||
+      val.includes("\r")
+    ) {
       return `"${val.replace(/"/g, '""')}"`
     }
     return val

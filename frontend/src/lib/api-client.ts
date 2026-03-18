@@ -1,5 +1,6 @@
 import type {
   GenderLookupResult,
+  GenderValue,
   Header,
   HeaderAliasRead,
   NameBatchResponse,
@@ -179,4 +180,12 @@ export async function createGenderNames(
       body: namesText,
     }
   )
+}
+
+export async function createGenderAlias(
+  gender: GenderValue,
+  alias: string
+): Promise<void> {
+  const endpoint = `/genders/${gender.toLowerCase()}/${encodeURIComponent(alias)}`
+  await request(endpoint, { method: "POST" })
 }

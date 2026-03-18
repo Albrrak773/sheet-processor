@@ -49,3 +49,6 @@ class ValidationResponse(BaseModel):
     details: list[str] = []
     data: list[RowData] = []
     raw_csv: str = ""
+    found_genders: list[str] = []
+    missing_genders: list[str] = []
+    unmapped_genders: list[dict[str, str | int]] = []

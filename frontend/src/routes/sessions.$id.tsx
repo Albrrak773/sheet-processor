@@ -14,9 +14,10 @@ import { MissingColumnsAlert } from "@/components/validation/missing-columns-ale
 import { DataTable } from "@/components/validation/editable-data-table/data-table"
 import { ActionsBar } from "@/components/actions-bar/actions-bar"
 import { GenderColumnModal } from "@/components/validation/gender-column-modal"
+import { GenderMappingModal } from "@/components/validation/gender-mapping-modal"
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
-import { getSession, updateSession } from "@/lib/api-client"
+import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
 
 export const Route = createFileRoute("/sessions/$id")({
   component: SessionPage,
@@ -38,6 +39,9 @@ function SessionPage() {
   const [hasChanges, setHasChanges] = React.useState(false)
   const initialValidationDone = React.useRef(false)
   const [genderModalOpen, setGenderModalOpen] = React.useState(false)
+  const [genderMappingModalOpen, setGenderMappingModalOpen] =
+    React.useState(false)
+  const [isSubmittingMappings, setIsSubmittingMappings] = React.useState(false)
 
   React.useEffect(() => {
     setData([])
@@ -191,7 +195,61 @@ function SessionPage() {
     )
   }
 
-  const hasGenderMissing = validationResult?.missing_columns.includes("gender") ?? false
+  const hasGenderMissing =
+    validationResult?.missing_columns.includes("gender") ?? false
+  const hasUnmappedGenders =
+    (validationResult?.unmapped_genders.length ?? 0) > 0
+
+  async function handleGenderMappingConfirm(
+    mappings: Map<string, GenderValue>
+  ) {
+    if (!session) return
+
+    setIsSubmittingMappings(true)
+
+    try {
+      for (const [unmappedValue, gender] of mappings) {
+        await createGenderAlias(gender, unmappedValue)
+      }
+
+      toast.success("Gender aliases created")
+
+      const dataWithoutRowNum: Array<RowData> = data.map(
+        ({ _rowNum: _, ...rest }) => rest
+      )
+      const tsv = rowsToTsv(dataWithoutRowNum)
+      revalidate.mutate(
+        { rawData: tsv },
+        {
+          onSuccess: async (result) => {
+            const dataWithRowNum = result.data.map((row, index) => ({
+              ...row,
+              _rowNum: index + 2,
+            }))
+
+            try {
+              await updateSession(session.id, { data: result.data })
+              setValidationResult(result)
+              setData(dataWithRowNum)
+              setHasChanges(false)
+              setGenderMappingModalOpen(false)
+              queryClient.invalidateQueries({ queryKey: ["session", id] })
+              toast.success("Data revalidated and saved")
+            } catch {
+              toast.error("Failed to save revalidated data to server")
+            }
+          },
+          onError: () => {
+            toast.error("Validation failed")
+          },
+        }
+      )
+    } catch {
+      toast.error("Failed to create gender aliases")
+    } finally {
+      setIsSubmittingMappings(false)
+    }
+  }
 
   if (isLoading || !session || !validationResult) {
     return (
@@ -227,6 +285,10 @@ function SessionPage() {
         onCreateGenderColumn={
           hasGenderMissing ? () => setGenderModalOpen(true) : undefined
         }
+        unmappedGenders={validationResult.unmapped_genders}
+        onMapGenders={
+          hasUnmappedGenders ? () => setGenderMappingModalOpen(true) : undefined
+        }
       />
 
       <ActionsBar
@@ -251,6 +313,14 @@ function SessionPage() {
         onOpenChange={setGenderModalOpen}
         data={data}
         onConfirm={handleGenderColumnConfirm}
+      />
+
+      <GenderMappingModal
+        open={genderMappingModalOpen}
+        onOpenChange={setGenderMappingModalOpen}
+        unmappedGenders={validationResult.unmapped_genders}
+        onConfirm={handleGenderMappingConfirm}
+        isSubmitting={isSubmittingMappings}
       />
     </div>
   )
