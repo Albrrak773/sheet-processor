@@ -9,7 +9,7 @@ from app.canonical import (
     resolve_column_key,
 )
 from app.gender_cache import get_gender_alias_map
-from app.models import ColumnName, InvalidRow, RowData
+from app.models import ColumnName, InvalidRow, InvalidType, RowData
 
 
 def validate_all_rows(rows: list[RowData], ignore_headers: list[str]) -> tuple[list[InvalidRow], list[str]]:
@@ -72,6 +72,7 @@ def validate_missing_values(rows: list[RowData], required_columns: list[ColumnNa
                     column=",".join(missing_fields),
                     value=None,
                     reason=f"row {row_idx + 2}: missing {', '.join(missing_fields)}",
+                    invalid_type="empty_value",
                 )
             )
     return invalid_rows
@@ -104,6 +105,7 @@ def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
                     column=input_name,
                     value=value,
                     reason=f"row {row_idx + 2}: {uni_id_col} must be 9 digits",
+                    invalid_type="invalid_value",
                 )
             )
 
@@ -137,6 +139,7 @@ def validate_genders(rows: list[RowData]) -> list[InvalidRow]:
                     column=input_name,
                     value=value,
                     reason=f"row {row_idx + 2}: invalid gender value '{value}'",
+                    invalid_type="invalid_value",
                 )
             )
 

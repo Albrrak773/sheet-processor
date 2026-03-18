@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel
 
 RowData: TypeAlias = dict[str, Any]
 ColumnName: TypeAlias = str
+InvalidType = Literal["empty_value", "invalid_value"]
 
 DEFAULT_ALIASES: dict[ColumnName, list[str]] = {
     "name": ["full name", "full_name", "student name"],
@@ -23,6 +24,7 @@ class InvalidRow(BaseModel):
     column: str
     value: Any
     reason: str
+    invalid_type: InvalidType
 
 
 class SuggestedFix(BaseModel):
