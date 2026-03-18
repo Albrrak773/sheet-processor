@@ -61,9 +61,8 @@ function HeaderAliasesTab() {
   const queryClient = useQueryClient()
   const [newAlias, setNewAlias] = React.useState("")
   const [selectedHeader, setSelectedHeader] = React.useState("")
-  const [deleteTarget, setDeleteTarget] = React.useState<HeaderAliasRead | null>(
-    null
-  )
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<HeaderAliasRead | null>(null)
   const [editTarget, setEditTarget] = React.useState<HeaderAliasRead | null>(
     null
   )
