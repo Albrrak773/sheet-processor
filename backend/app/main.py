@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.canonical import refresh_cache
 from app.db.database import get_session
 from app.gender_cache import refresh_gender_cache
-from app.routers import aliases, genders, sessions, upload, validation
+from app.routers import aliases, genders, members, sessions, upload, validation
 
 
 @asynccontextmanager
@@ -42,6 +42,7 @@ app.add_middleware(
 app.include_router(validation.router)
 app.include_router(aliases.router)
 app.include_router(genders.router)
+app.include_router(members.router)
 app.include_router(upload.router)
 app.include_router(sessions.router)
 

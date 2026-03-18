@@ -136,3 +136,38 @@ class NameBatchResponse(SQLModel):
     skipped: int
     created_names: list[str]
     skipped_names: list[str]
+
+
+class Member(SQLModel, table=True):
+    __tablename__ = "members"
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=50)
+    email: str | None = Field(default=None, max_length=100)
+    phone_number: str | None = Field(default=None, max_length=20)
+    uni_id: str = Field(max_length=50, unique=True)
+    gender: str
+    uni_level: int
+    uni_college: str = Field(max_length=100)
+    created_at: datetime
+    updated_at: datetime
+    is_authenticated: bool = Field(default=False)
+
+
+class MemberLookupRequest(SQLModel):
+    name: str | None = None
+    email: str | None = None
+    phone_number: str | None = None
+
+
+class MemberRead(SQLModel):
+    id: int
+    name: str
+    email: str | None
+    phone_number: str | None
+    uni_id: str
+    gender: str
+    uni_level: int
+    uni_college: str
+    created_at: datetime
+    updated_at: datetime
+    is_authenticated: bool

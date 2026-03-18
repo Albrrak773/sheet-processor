@@ -84,6 +84,22 @@ CREATE TABLE `gender_aliases` (
   UNIQUE KEY `alias` (`alias`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `members` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `uni_id` varchar(50) NOT NULL,
+  `gender` enum('Male','Female') NOT NULL,
+  `uni_level` int NOT NULL,
+  `uni_college` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_authenticated` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uni_id` (`uni_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1601 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 --
 -- Dumping routines for database 'sheet_processor'
 --
