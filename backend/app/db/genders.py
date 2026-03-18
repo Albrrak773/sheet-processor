@@ -38,6 +38,30 @@ async def insert_names(session: AsyncSession, names: list[str], gender: str) -> 
     await session.commit()
 
 
+async def list_names(session: AsyncSession) -> list[Name]:
+    stmt = select(Name)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_name_by_id(session: AsyncSession, name_id: int) -> Name | None:
+    stmt = select(Name).where(Name.id == name_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def update_name_gender(session: AsyncSession, name_id: int, gender: str) -> Name | None:
+    stmt = select(Name).where(Name.id == name_id)
+    result = await session.execute(stmt)
+    name = result.scalar_one_or_none()
+    if name is None:
+        return None
+    name.gender = gender
+    await session.commit()
+    await session.refresh(name)
+    return name
+
+
 async def list_gender_aliases(session: AsyncSession) -> list[GenderAlias]:
     result = await session.execute(select(GenderAlias))
     return list(result.scalars().all())
@@ -49,9 +73,35 @@ async def get_alias_by_name(session: AsyncSession, alias: str) -> GenderAlias | 
     return result.scalar_one_or_none()
 
 
+async def get_alias_by_id(session: AsyncSession, alias_id: int) -> GenderAlias | None:
+    stmt = select(GenderAlias).where(GenderAlias.id == alias_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_gender_alias(session: AsyncSession, alias_id: int) -> None:
+    stmt = delete(GenderAlias).where(GenderAlias.id == alias_id)
+    await session.execute(stmt)
+    await session.commit()
+
+
 async def insert_alias(session: AsyncSession, alias: str, aliase_type: str) -> GenderAlias:
     new_alias = GenderAlias(alias=alias, aliase_type=aliase_type)
     session.add(new_alias)
     await session.commit()
     await session.refresh(new_alias)
     return new_alias
+
+
+async def update_gender_alias(
+    session: AsyncSession, alias_id: int, new_alias: str
+) -> GenderAlias | None:
+    stmt = select(GenderAlias).where(GenderAlias.id == alias_id)
+    result = await session.execute(stmt)
+    alias = result.scalar_one_or_none()
+    if alias is None:
+        return None
+    alias.alias = new_alias
+    await session.commit()
+    await session.refresh(alias)
+    return alias

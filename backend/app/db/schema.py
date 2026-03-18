@@ -49,6 +49,10 @@ class HeaderAliasCreate(SQLModel):
     alias_name: str
 
 
+class HeaderAliasUpdate(SQLModel):
+    alias_name: str
+
+
 class HeaderRead(SQLModel):
     id: int
     name: str
@@ -112,6 +116,10 @@ class GenderAliasRead(SQLModel):
     alias: str
 
 
+class GenderAliasUpdate(SQLModel):
+    alias: str
+
+
 class Name(SQLModel, table=True):
     __tablename__ = "names"  # type: ignore[assignment]
     id: int | None = Field(default=None, primary_key=True)
@@ -122,6 +130,10 @@ class Name(SQLModel, table=True):
 class NameRead(SQLModel):
     id: int
     name: str
+    gender: str
+
+
+class NameUpdate(SQLModel):
     gender: str
 
 

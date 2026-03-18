@@ -6,6 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.schema import Member
 
 
+async def list_members(session: AsyncSession) -> list[Member]:
+    stmt = select(Member)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def lookup_member(
     session: AsyncSession,
     name: str | None,

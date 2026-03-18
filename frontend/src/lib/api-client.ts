@@ -1,9 +1,12 @@
 import type {
+  GenderAliasRead,
   GenderLookupResult,
   GenderValue,
   Header,
   HeaderAliasRead,
+  MemberRead,
   NameBatchResponse,
+  NameRead,
   SessionCreate,
   SessionDetail,
   SessionRead,
@@ -44,6 +47,11 @@ async function request<T>(
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error")
     throw new Error(`API error ${res.status}: ${body}`)
+  }
+
+  // Handle 204 No Content responses
+  if (res.status === 204) {
+    return undefined as T
   }
 
   return res.json() as Promise<T>
@@ -188,4 +196,65 @@ export async function createGenderAlias(
 ): Promise<void> {
   const endpoint = `/genders/${gender.toLowerCase()}/${encodeURIComponent(alias)}`
   await request(endpoint, { method: "POST" })
+}
+
+// Header Aliases
+export async function listHeaderAliases(): Promise<Array<HeaderAliasRead>> {
+  return request<Array<HeaderAliasRead>>("/aliases/")
+}
+
+export async function deleteHeaderAlias(aliasId: number): Promise<void> {
+  await request(`/aliases/${aliasId}`, { method: "DELETE" })
+}
+
+export async function updateHeaderAlias(
+  aliasId: number,
+  aliasName: string
+): Promise<HeaderAliasRead> {
+  return request<HeaderAliasRead>(`/aliases/${aliasId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alias_name: aliasName }),
+  })
+}
+
+// Gender Aliases
+export async function listGenderAliases(): Promise<Array<GenderAliasRead>> {
+  return request<Array<GenderAliasRead>>("/genders")
+}
+
+export async function deleteGenderAlias(aliasId: number): Promise<void> {
+  await request(`/genders/${aliasId}`, { method: "DELETE" })
+}
+
+export async function updateGenderAlias(
+  aliasId: number,
+  alias: string
+): Promise<GenderAliasRead> {
+  return request<GenderAliasRead>(`/genders/${aliasId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alias }),
+  })
+}
+
+// Names
+export async function listNames(): Promise<Array<NameRead>> {
+  return request<Array<NameRead>>("/genders/names")
+}
+
+export async function updateNameGender(
+  nameId: number,
+  gender: GenderValue
+): Promise<NameRead> {
+  return request<NameRead>(`/genders/names/${nameId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ gender }),
+  })
+}
+
+// Members
+export async function listMembers(): Promise<Array<MemberRead>> {
+  return request<Array<MemberRead>>("/uni-id")
 }

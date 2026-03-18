@@ -11,6 +11,7 @@ from app.db.schema import (
     Header,
     HeaderAlias,
     HeaderAliasRead,
+    HeaderAliasUpdate,
     HeaderRead,
 )
 from app.models import DEFAULT_ALIASES, OPTIONAL_COLUMNS
@@ -134,3 +135,43 @@ async def delete_alias(
     await session.execute(delete(HeaderAlias).where(HeaderAlias.id == alias_id))  # type: ignore[arg-type]
     await session.commit()
     await refresh_cache(session)
+
+
+@router.patch("/{alias_id}", response_model=HeaderAliasRead)
+async def update_alias(
+    alias_id: int,
+    data: HeaderAliasUpdate,
+    session: AsyncSession = Depends(get_session),
+) -> HeaderAliasRead:
+    stmt = (
+        select(HeaderAlias)
+        .options(joinedload(HeaderAlias.header))  # type: ignore[arg-type]
+        .where(HeaderAlias.id == alias_id)  # type: ignore[arg-type]
+    )
+    result = await session.execute(stmt)
+    alias = result.scalar_one_or_none()
+    if not alias:
+        raise HTTPException(status_code=404, detail="Alias not found")
+
+    new_alias_lower = data.alias_name.lower()
+
+    # Check if alias name already exists (for a different alias)
+    check_stmt = select(HeaderAlias).where(
+        HeaderAlias.alias_name == new_alias_lower,  # type: ignore[arg-type]
+        HeaderAlias.id != alias_id,  # type: ignore[arg-type]
+    )
+    check_result = await session.execute(check_stmt)
+    if check_result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Alias name already exists")
+
+    alias.alias_name = new_alias_lower
+    await session.commit()
+    await session.refresh(alias)
+    await refresh_cache(session)
+
+    return HeaderAliasRead(
+        id=alias.id,  # type: ignore[arg-type]
+        header_id=alias.header_id,
+        header_name=alias.header.name,
+        alias_name=alias.alias_name,
+    )

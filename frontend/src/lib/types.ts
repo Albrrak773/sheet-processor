@@ -116,3 +116,29 @@ export interface GenderEntry {
   originalGender: GenderValue | null
   modified: boolean
 }
+
+export interface GenderAliasRead {
+  id: number
+  aliase_type: "Male" | "Female"
+  alias: string
+}
+
+export interface NameRead {
+  id: number
+  name: string
+  gender: GenderValue
+}
+
+export interface MemberRead {
+  id: number
+  name: string
+  email: string | null
+  phone_number: string | null
+  uni_id: string
+  gender: GenderValue
+  uni_level: number
+  uni_college: string
+  created_at: string
+  updated_at: string
+  is_authenticated: boolean
+}

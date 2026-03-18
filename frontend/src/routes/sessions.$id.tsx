@@ -18,6 +18,7 @@ import { GenderMappingModal } from "@/components/validation/gender-mapping-modal
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
 import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
+import { SessionPageSkeleton } from "@/components/skeletons/session-page-skeleton"
 
 export const Route = createFileRoute("/sessions/$id")({
   component: SessionPage,
@@ -252,11 +253,7 @@ function SessionPage() {
   }
 
   if (isLoading || !session || !validationResult) {
-    return (
-      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
+    return <SessionPageSkeleton />
   }
 
   const columnNames = validationResult.columns_found

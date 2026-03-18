@@ -10,11 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SessionsIdRouteImport } from './routes/sessions.$id'
+import { Route as AdminMembersRouteImport } from './routes/admin/members'
+import { Route as AdminGenderRouteImport } from './routes/admin/gender'
+import { Route as AdminAliasesRouteImport } from './routes/admin/aliases'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionsIdRoute = SessionsIdRouteImport.update({
@@ -22,31 +31,81 @@ const SessionsIdRoute = SessionsIdRouteImport.update({
   path: '/sessions/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMembersRoute = AdminMembersRouteImport.update({
+  id: '/admin/members',
+  path: '/admin/members',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGenderRoute = AdminGenderRouteImport.update({
+  id: '/admin/gender',
+  path: '/admin/gender',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAliasesRoute = AdminAliasesRouteImport.update({
+  id: '/admin/aliases',
+  path: '/admin/aliases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin/aliases': typeof AdminAliasesRoute
+  '/admin/gender': typeof AdminGenderRoute
+  '/admin/members': typeof AdminMembersRoute
   '/sessions/$id': typeof SessionsIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/aliases': typeof AdminAliasesRoute
+  '/admin/gender': typeof AdminGenderRoute
+  '/admin/members': typeof AdminMembersRoute
   '/sessions/$id': typeof SessionsIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin/aliases': typeof AdminAliasesRoute
+  '/admin/gender': typeof AdminGenderRoute
+  '/admin/members': typeof AdminMembersRoute
   '/sessions/$id': typeof SessionsIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sessions/$id'
+  fullPaths:
+    | '/'
+    | '/admin/aliases'
+    | '/admin/gender'
+    | '/admin/members'
+    | '/sessions/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sessions/$id'
-  id: '__root__' | '/' | '/sessions/$id'
+  to:
+    | '/'
+    | '/admin/aliases'
+    | '/admin/gender'
+    | '/admin/members'
+    | '/sessions/$id'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin/aliases'
+    | '/admin/gender'
+    | '/admin/members'
+    | '/sessions/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminAliasesRoute: typeof AdminAliasesRoute
+  AdminGenderRoute: typeof AdminGenderRoute
+  AdminMembersRoute: typeof AdminMembersRoute
   SessionsIdRoute: typeof SessionsIdRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sessions/$id': {
       id: '/sessions/$id'
       path: '/sessions/$id'
@@ -65,12 +131,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/members': {
+      id: '/admin/members'
+      path: '/admin/members'
+      fullPath: '/admin/members'
+      preLoaderRoute: typeof AdminMembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/gender': {
+      id: '/admin/gender'
+      path: '/admin/gender'
+      fullPath: '/admin/gender'
+      preLoaderRoute: typeof AdminGenderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/aliases': {
+      id: '/admin/aliases'
+      path: '/admin/aliases'
+      fullPath: '/admin/aliases'
+      preLoaderRoute: typeof AdminAliasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminAliasesRoute: AdminAliasesRoute,
+  AdminGenderRoute: AdminGenderRoute,
+  AdminMembersRoute: AdminMembersRoute,
   SessionsIdRoute: SessionsIdRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

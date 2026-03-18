@@ -13,6 +13,33 @@ router = APIRouter(prefix="/uni-id", tags=["members"])
 logger = logging.getLogger(__name__)
 
 
+@router.get("", response_model=list[MemberRead])
+async def list_members(
+    session: AsyncSession = Depends(get_session),
+) -> list[MemberRead]:
+    try:
+        members = await db.list_members(session)
+        return [
+            MemberRead(
+                id=m.id,  # type: ignore[arg-type]
+                name=m.name,
+                email=m.email,
+                phone_number=m.phone_number,
+                uni_id=m.uni_id,
+                gender=m.gender,
+                uni_level=m.uni_level,
+                uni_college=m.uni_college,
+                created_at=m.created_at,
+                updated_at=m.updated_at,
+                is_authenticated=m.is_authenticated,
+            )
+            for m in members
+        ]
+    except Exception as e:
+        logger.exception("Failed to list members")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
 @router.post("/lookup", response_model=MemberRead)
 async def lookup_uni_id(
     request: MemberLookupRequest,

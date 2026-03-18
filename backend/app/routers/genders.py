@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import genders as db
 from app.db.database import get_session
-from app.db.schema import GenderAliasRead, NameBatchResponse, NameLookupResult
+from app.db.schema import GenderAliasRead, GenderAliasUpdate, NameBatchResponse, NameLookupResult, NameRead, NameUpdate
 from app.gender_cache import refresh_gender_cache
 
 router = APIRouter(prefix="/genders", tags=["genders"])
@@ -48,6 +48,92 @@ async def list_gender_aliases(
         ]
     except Exception as e:
         logger.exception("Failed to list gender aliases")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.delete("/{alias_id}", status_code=204)
+async def delete_gender_alias(
+    alias_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    try:
+        existing = await db.get_alias_by_id(session, alias_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Alias not found")
+        await db.delete_gender_alias(session, alias_id)
+        await refresh_gender_cache(session)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to delete gender alias")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.patch("/{alias_id}", response_model=GenderAliasRead)
+async def update_gender_alias(
+    alias_id: int,
+    data: GenderAliasUpdate,
+    session: AsyncSession = Depends(get_session),
+) -> GenderAliasRead:
+    try:
+        existing = await db.get_alias_by_id(session, alias_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Alias not found")
+
+        new_alias = normalize_name(data.alias)
+        if not new_alias:
+            raise HTTPException(status_code=400, detail="Alias cannot be empty")
+
+        # Check if alias already exists (for a different record)
+        existing_by_name = await db.get_alias_by_name(session, new_alias)
+        if existing_by_name and existing_by_name.id != alias_id:
+            raise HTTPException(status_code=400, detail="Alias already exists")
+
+        updated = await db.update_gender_alias(session, alias_id, new_alias)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Alias not found")
+
+        await refresh_gender_cache(session)
+        return GenderAliasRead(id=updated.id, aliase_type=updated.aliase_type, alias=updated.alias)  # type: ignore[arg-type]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to update gender alias")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/names", response_model=list[NameRead])
+async def list_names(
+    session: AsyncSession = Depends(get_session),
+) -> list[NameRead]:
+    try:
+        names = await db.list_names(session)
+        return [
+            NameRead(id=n.id, name=n.name, gender=n.gender)  # type: ignore[arg-type]
+            for n in names
+        ]
+    except Exception as e:
+        logger.exception("Failed to list names")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.patch("/names/{name_id}", response_model=NameRead)
+async def update_name(
+    name_id: int,
+    data: NameUpdate,
+    session: AsyncSession = Depends(get_session),
+) -> NameRead:
+    try:
+        if data.gender not in ("Male", "Female"):
+            raise HTTPException(status_code=400, detail="Gender must be 'Male' or 'Female'")
+        updated = await db.update_name_gender(session, name_id, data.gender)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Name not found")
+        return NameRead(id=updated.id, name=updated.name, gender=updated.gender)  # type: ignore[arg-type]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to update name")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 

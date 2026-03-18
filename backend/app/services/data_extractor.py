@@ -65,7 +65,7 @@ def is_published_sheet_url(url: HttpUrl) -> bool:
 
 async def is_file_url(url: HttpUrl) -> bool:
     extension = _get_extension(url)
-    return extension not in {".csv", ".xlsx", ".xls", ".tsv"}
+    return extension in {".csv", ".xlsx", ".xls", ".tsv"}
 
 async def extract_from_file_url(file_url: HttpUrl) -> ExtractionResult:
 

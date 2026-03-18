@@ -9,7 +9,15 @@ import {
 } from "@clerk/tanstack-react-start"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon, Delete01Icon, Edit02Icon } from "@hugeicons/core-free-icons"
+import {
+  Add01Icon,
+  Delete01Icon,
+  Edit02Icon,
+  Settings01Icon,
+  TextIcon,
+  UserGroupIcon,
+  UserSearch01Icon,
+} from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
 import type { SessionRead } from "@/lib/types"
@@ -309,6 +317,48 @@ export function AppSidebar({ children }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
           <Show when="signed-in">
+            <SidebarGroup>
+              <SidebarGroupLabel>Admin</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate({ to: "/admin" })}
+                    >
+                      <HugeiconsIcon icon={Settings01Icon} className="size-4" />
+                      <span>Admin Panel</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate({ to: "/admin/aliases" })}
+                    >
+                      <HugeiconsIcon icon={TextIcon} className="size-4" />
+                      <span>Manage Aliases</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate({ to: "/admin/members" })}
+                    >
+                      <HugeiconsIcon
+                        icon={UserSearch01Icon}
+                        className="size-4"
+                      />
+                      <span>Search Members</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate({ to: "/admin/gender" })}
+                    >
+                      <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
+                      <span>Find Gender</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
             <SessionList />
           </Show>
         </SidebarContent>
