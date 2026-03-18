@@ -115,7 +115,7 @@ class GenderAliasRead(SQLModel):
 class Name(SQLModel, table=True):
     __tablename__ = "names"  # type: ignore[assignment]
     id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(unique=True)
+    name: str = Field()
     gender: str
 
 
@@ -123,6 +123,12 @@ class NameRead(SQLModel):
     id: int
     name: str
     gender: str
+
+
+class NameLookupResult(SQLModel):
+    name: str
+    gender: str | None
+    is_ambiguous: bool
 
 
 class NameBatchResponse(SQLModel):

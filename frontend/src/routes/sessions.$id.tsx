@@ -2,12 +2,18 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import type { RowData, TableRowData, ValidationResponse } from "@/lib/types"
+import type {
+  GenderValue,
+  RowData,
+  TableRowData,
+  ValidationResponse,
+} from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { SummaryCards } from "@/components/validation/summary-cards"
 import { MissingColumnsAlert } from "@/components/validation/missing-columns-alert"
 import { DataTable } from "@/components/validation/editable-data-table/data-table"
 import { ActionsBar } from "@/components/actions-bar/actions-bar"
+import { GenderColumnModal } from "@/components/validation/gender-column-modal"
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
 import { getSession, updateSession } from "@/lib/api-client"
@@ -31,6 +37,7 @@ function SessionPage() {
     React.useState<ValidationResponse | null>(null)
   const [hasChanges, setHasChanges] = React.useState(false)
   const initialValidationDone = React.useRef(false)
+  const [genderModalOpen, setGenderModalOpen] = React.useState(false)
 
   React.useEffect(() => {
     setData([])
@@ -132,6 +139,59 @@ function SessionPage() {
     )
   }
 
+  function handleGenderColumnConfirm(
+    genderColumn: Record<string, GenderValue>,
+    nameColumn: string
+  ) {
+    if (!session) return
+
+    const updatedData = data.map((row) => {
+      const nameValue = String(row[nameColumn] ?? "").trim()
+      const gender: string = genderColumn[nameValue] ?? ""
+      const { _rowNum, ...rest } = row
+      return {
+        ...rest,
+        gender,
+        _rowNum,
+      }
+    })
+
+    setData(updatedData)
+    setHasChanges(true)
+
+    const dataWithoutRowNum: Array<RowData> = updatedData.map(
+      ({ _rowNum: _, ...rest }) => rest
+    )
+    const tsv = rowsToTsv(dataWithoutRowNum)
+    revalidate.mutate(
+      { rawData: tsv },
+      {
+        onSuccess: async (result) => {
+          const dataWithRowNum = result.data.map((row, index) => ({
+            ...row,
+            _rowNum: index + 2,
+          }))
+
+          try {
+            await updateSession(session.id, { data: result.data })
+            setValidationResult(result)
+            setData(dataWithRowNum)
+            setHasChanges(false)
+            queryClient.invalidateQueries({ queryKey: ["session", id] })
+            toast.success("Gender column added and data revalidated")
+          } catch {
+            toast.error("Failed to save data with gender column")
+          }
+        },
+        onError: () => {
+          toast.error("Validation failed")
+        },
+      }
+    )
+  }
+
+  const hasGenderMissing = validationResult?.missing_columns.includes("gender") ?? false
+
   if (isLoading || !session || !validationResult) {
     return (
       <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
@@ -160,13 +220,21 @@ function SessionPage() {
 
       <SummaryCards result={validationResult} />
 
-      <MissingColumnsAlert columns={[]} details={validationResult.details} />
+      <MissingColumnsAlert
+        columns={validationResult.missing_columns}
+        details={validationResult.details}
+        onCreateGenderColumn={
+          hasGenderMissing ? () => setGenderModalOpen(true) : undefined
+        }
+      />
 
       <ActionsBar
         data={data}
         onRevalidate={handleRevalidate}
         isRevalidating={revalidate.isPending}
         hasChanges={hasChanges}
+        showGenderButton={hasGenderMissing}
+        onShowGenderModal={() => setGenderModalOpen(true)}
       />
 
       <DataTable
@@ -175,6 +243,13 @@ function SessionPage() {
         invalidRows={validationResult.invalid_rows}
         suggestedFixes={validationResult.suggested_fixes}
         onCellEdit={handleCellEdit}
+      />
+
+      <GenderColumnModal
+        open={genderModalOpen}
+        onOpenChange={setGenderModalOpen}
+        data={data}
+        onConfirm={handleGenderColumnConfirm}
       />
     </div>
   )

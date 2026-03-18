@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import genders as db
 from app.db.database import get_session
-from app.db.schema import GenderAliasRead, NameBatchResponse, NameRead
+from app.db.schema import GenderAliasRead, NameBatchResponse, NameLookupResult
 from app.gender_cache import refresh_gender_cache
 
 router = APIRouter(prefix="/genders", tags=["genders"])
@@ -97,6 +97,7 @@ async def create_female_alias(
 async def create_names(
     gender_type: GenderType,
     names_text: str = Body(media_type="text/plain"),
+    overwrite: bool = False,
     session: AsyncSession = Depends(get_session),
 ) -> NameBatchResponse:
     try:
@@ -107,17 +108,32 @@ async def create_names(
             raise HTTPException(status_code=400, detail="No valid names provided")
 
         existing = await db.get_existing_names(session, names)
-        to_create = [n for n in names if n not in existing]
-        skipped = [n for n in names if n in existing]
+        
+        created_names: list[str] = []
+        skipped_names: list[str] = []
+        
+        for name in names:
+            if name not in existing:
+                created_names.append(name)
+            else:
+                existing_genders = existing[name]
+                if overwrite:
+                    await db.delete_names_by_name(session, name)
+                    created_names.append(name)
+                else:
+                    if gender in existing_genders:
+                        skipped_names.append(name)
+                    else:
+                        created_names.append(name)
 
-        if to_create:
-            await db.insert_names(session, to_create, gender)
+        if created_names:
+            await db.insert_names(session, created_names, gender)
 
         return NameBatchResponse(
-            created=len(to_create),
-            skipped=len(skipped),
-            created_names=to_create,
-            skipped_names=skipped,
+            created=len(created_names),
+            skipped=len(skipped_names),
+            created_names=created_names,
+            skipped_names=skipped_names,
         )
     except HTTPException:
         raise
@@ -126,19 +142,42 @@ async def create_names(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.get("/lookup/{name}", response_model=NameRead)
-async def lookup_name(
-    name: str,
+@router.post("/lookup", response_model=list[NameLookupResult])
+async def lookup_names(
+    names_text: str = Body(media_type="text/plain"),
     session: AsyncSession = Depends(get_session),
-) -> NameRead:
+) -> list[NameLookupResult]:
     try:
-        normalized = normalize_name(name)
-        result = await db.lookup_name(session, normalized)
-        if not result:
-            raise HTTPException(status_code=404, detail="Name not found")
-        return NameRead(id=result.id, name=result.name, gender=result.gender)  # type: ignore[arg-type]
-    except HTTPException:
-        raise
+        results: list[NameLookupResult] = []
+        seen_names: set[str] = set()
+        
+        for line in names_text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            
+            first_name = line.split()[0] if line.split() else line
+            normalized = normalize_name(first_name)
+            
+            if not normalized or normalized in seen_names:
+                continue
+            seen_names.add(normalized)
+            
+            matches = await db.lookup_names(session, normalized)
+            
+            if not matches:
+                results.append(NameLookupResult(name=normalized, gender=None, is_ambiguous=False))
+            else:
+                genders = {m.gender for m in matches}
+                is_ambiguous = len(genders) > 1
+                first_match = matches[0]
+                results.append(NameLookupResult(
+                    name=normalized,
+                    gender=first_match.gender,
+                    is_ambiguous=is_ambiguous,
+                ))
+        
+        return results
     except Exception as e:
-        logger.exception("Failed to lookup name")
+        logger.exception("Failed to lookup names")
         raise HTTPException(status_code=500, detail="Internal server error") from e

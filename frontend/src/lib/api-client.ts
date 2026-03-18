@@ -1,6 +1,8 @@
 import type {
+  GenderLookupResult,
   Header,
   HeaderAliasRead,
+  NameBatchResponse,
   SessionCreate,
   SessionDetail,
   SessionRead,
@@ -147,5 +149,34 @@ export async function deleteSession(id: string): Promise<void> {
       method: "DELETE",
     },
     true
+  )
+}
+
+export async function lookupGenderNames(
+  namesText: string
+): Promise<Array<GenderLookupResult>> {
+  return request<Array<GenderLookupResult>>("/genders/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: namesText,
+  })
+}
+
+export async function createGenderNames(
+  genderType: string,
+  namesText: string,
+  overwrite: boolean = false
+): Promise<NameBatchResponse> {
+  const params = new URLSearchParams()
+  if (overwrite) {
+    params.set("overwrite", "true")
+  }
+  return request<NameBatchResponse>(
+    `/genders/${genderType}/?${params.toString()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: namesText,
+    }
   )
 }

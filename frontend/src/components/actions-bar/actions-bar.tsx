@@ -3,6 +3,7 @@ import {
   Copy01Icon,
   Download04Icon,
   RefreshIcon,
+  UserIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import type { RowData } from "@/lib/types"
@@ -47,6 +48,8 @@ interface ActionsBarProps {
   onRevalidate: () => void
   isRevalidating: boolean
   hasChanges: boolean
+  showGenderButton?: boolean
+  onShowGenderModal?: () => void
 }
 
 function ActionsBar({
@@ -54,6 +57,8 @@ function ActionsBar({
   onRevalidate,
   isRevalidating,
   hasChanges,
+  showGenderButton = false,
+  onShowGenderModal,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
     const tsv = rowsToTsv(data)
@@ -86,6 +91,13 @@ function ActionsBar({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
+        {showGenderButton && onShowGenderModal && (
+          <Button variant="outline" onClick={onShowGenderModal}>
+            <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+            Create Gender Column
+          </Button>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">

@@ -85,3 +85,26 @@ export interface SessionUpdate {
   title?: string
   data?: Array<RowData>
 }
+
+export type GenderValue = "Male" | "Female"
+
+export interface GenderLookupResult {
+  name: string
+  gender: GenderValue | null
+  is_ambiguous: boolean
+}
+
+export interface NameBatchResponse {
+  created: number
+  skipped: number
+  created_names: Array<string>
+  skipped_names: Array<string>
+}
+
+export interface GenderEntry {
+  fullName: string
+  firstName: string
+  gender: GenderValue | null
+  originalGender: GenderValue | null
+  modified: boolean
+}
