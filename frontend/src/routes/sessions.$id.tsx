@@ -56,8 +56,9 @@ function SessionPage() {
 
       if (!initialValidationDone.current) {
         initialValidationDone.current = true
+        const tsv = rowsToTsv(session.data)
         revalidate.mutate(
-          { rawData: session.original_csv },
+          { rawData: tsv },
           {
             onSuccess: (result) => {
               setValidationResult(result)
