@@ -8,6 +8,7 @@ from app.canonical import (
     get_row_value,
     resolve_column_key,
 )
+from app.gender_cache import get_gender_alias_map
 from app.models import ColumnName, InvalidRow, RowData
 
 
@@ -18,7 +19,7 @@ def validate_all_rows(rows: list[RowData], ignore_headers: list[str]) -> tuple[l
 
     canonical_headers = get_canonical_headers()
     optional_headers = get_optional_headers()
-    required_columns = [col for col in canonical_headers if col not in optional_headers]
+    required_columns = [col for col in canonical_headers if col not in optional_headers and col not in ignore_headers]
 
     empty_column = get_empty_columns(rows, required_columns)
 
@@ -27,6 +28,8 @@ def validate_all_rows(rows: list[RowData], ignore_headers: list[str]) -> tuple[l
     invalid_rows.extend(validate_missing_values(rows, required_columns, empty_column))
 
     invalid_rows.extend(validate_uni_id(rows))
+
+    invalid_rows.extend(validate_genders(rows))
 
     return invalid_rows, details
 
@@ -73,7 +76,6 @@ def validate_missing_values(rows: list[RowData], required_columns: list[ColumnNa
             )
     return invalid_rows
 
-
 def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
     invalid_rows: list[InvalidRow] = []
     uni_id_col: ColumnName = "university id"
@@ -102,6 +104,39 @@ def validate_uni_id(rows: list[RowData]) -> list[InvalidRow]:
                     column=input_name,
                     value=value,
                     reason=f"row {row_idx + 2}: {uni_id_col} must be 9 digits",
+                )
+            )
+
+    return invalid_rows
+
+def validate_genders(rows: list[RowData]) -> list[InvalidRow]:
+    invalid_rows: list[InvalidRow] = []
+    gender_col: ColumnName = "gender"
+
+    if not rows:
+        return invalid_rows
+
+    input_name = _get_input_header(rows[0], gender_col)
+    if input_name is None:
+        return invalid_rows
+
+    gender_map = get_gender_alias_map()
+    valid_values = {"male", "female"}
+
+    for row_idx, row in enumerate(rows):
+        value = get_row_value(row, gender_col)
+        if _is_empty(value):
+            continue
+
+        value_str = str(value).strip().lower()
+
+        if value_str not in valid_values and value_str not in gender_map:
+            invalid_rows.append(
+                InvalidRow(
+                    row=row_idx + 2,
+                    column=input_name,
+                    value=value,
+                    reason=f"row {row_idx + 2}: invalid gender value '{value}'",
                 )
             )
 

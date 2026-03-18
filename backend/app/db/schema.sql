@@ -77,6 +77,14 @@ CREATE TABLE `sessions` (
   KEY `idx_user_updated` (`user_id`,`updated_at` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `gender_aliases` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `aliase_type` enum('Male','Female') NOT NULL,
+  `alias` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `alias` (`alias`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 --
 -- Dumping routines for database 'sheet_processor'
 --

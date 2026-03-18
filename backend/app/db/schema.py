@@ -93,3 +93,20 @@ class SessionDetail(SQLModel):
     data: list[dict[str, Any]]
     created_at: datetime
     updated_at: datetime
+
+
+class GenderAlias(SQLModel, table=True):
+    __tablename__ = "gender_aliases"  # type: ignore[assignment]
+    id: int | None = Field(default=None, primary_key=True)
+    aliase_type: str = Field()
+    alias: str = Field(unique=True)
+
+
+class GenderAliasCreate(SQLModel):
+    alias: str
+
+
+class GenderAliasRead(SQLModel):
+    id: int
+    aliase_type: str
+    alias: str
