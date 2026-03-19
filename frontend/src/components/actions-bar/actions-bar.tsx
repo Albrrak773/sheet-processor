@@ -55,6 +55,7 @@ interface ActionsBarProps {
   onShowGenderModal?: () => void
   duplicateGroupCount?: number
   onShowDuplicateResolver?: () => void
+  originalCsv?: string
 }
 
 function ActionsBar({
@@ -67,11 +68,18 @@ function ActionsBar({
   onShowGenderModal,
   duplicateGroupCount = 0,
   onShowDuplicateResolver,
+  originalCsv,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
     const tsv = rowsToTsv(data, columnNames)
     await navigator.clipboard.writeText(tsv)
     toast.success("Copied to clipboard")
+  }
+
+  async function handleCopyOriginalCsv() {
+    if (!originalCsv) return
+    await navigator.clipboard.writeText(originalCsv)
+    toast.success("Original CSV copied to clipboard")
   }
 
   async function handleOpenSheet() {
@@ -147,6 +155,13 @@ function ActionsBar({
           <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
           Copy as TSV
         </Button>
+
+        {originalCsv && (
+          <Button variant="outline" onClick={handleCopyOriginalCsv}>
+            <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
+            Copy Original CSV
+          </Button>
+        )}
 
         <Button variant="outline" onClick={handleOpenSheet}>
           <GoogleSheetsIcon />

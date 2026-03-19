@@ -1,3 +1,10 @@
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  CheckmarkCircle02Icon,
+  Delete02Icon,
+  GitMergeIcon,
+  ListViewIcon,
+} from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +21,13 @@ interface ToolbarProps {
   invalidRowCount: number
   duplicateRowCount: number
 }
+
+const filterIcons = {
+  all: ListViewIcon,
+  valid: CheckmarkCircle02Icon,
+  invalid: Delete02Icon,
+  duplicate: GitMergeIcon,
+} as const
 
 function Toolbar({
   filter,
@@ -54,6 +68,7 @@ function Toolbar({
                 "bg-purple-600 hover:bg-purple-700"
             )}
           >
+            <HugeiconsIcon icon={filterIcons[f.value]} strokeWidth={2} />
             {f.label}
             <Badge variant="secondary" className="ml-1.5 px-1.5 text-xs">
               {f.count}

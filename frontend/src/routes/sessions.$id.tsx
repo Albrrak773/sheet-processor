@@ -509,6 +509,7 @@ function SessionPage() {
         onShowGenderModal={() => setGenderModalOpen(true)}
         duplicateGroupCount={validationResult.duplicate_rows.length}
         onShowDuplicateResolver={() => setDuplicateResolverOpen(true)}
+        originalCsv={session.original_csv}
       />
 
       <DataTable

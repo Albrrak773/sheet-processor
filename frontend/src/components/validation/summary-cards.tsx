@@ -1,3 +1,11 @@
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  CheckmarkCircle02Icon,
+  Delete02Icon,
+  GitMergeIcon,
+  LayoutTopIcon,
+  ListViewIcon,
+} from "@hugeicons/core-free-icons"
 import type { ValidationResponse } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -18,26 +26,31 @@ function SummaryCards({ result }: SummaryCardsProps) {
       title: "Total Rows",
       value: result.total_rows,
       className: "",
+      icon: ListViewIcon,
     },
     {
       title: "Valid",
       value: validCount,
       className: "text-green-600",
+      icon: CheckmarkCircle02Icon,
     },
     {
       title: "Invalid",
       value: invalidCount,
       className: invalidCount > 0 ? "text-red-600" : "",
+      icon: Delete02Icon,
     },
     {
       title: "Duplicates",
       value: duplicateCount,
       className: duplicateCount > 0 ? "text-purple-600" : "",
+      icon: GitMergeIcon,
     },
     {
       title: "Missing Columns",
       value: result.missing_columns.length,
       className: result.missing_columns.length > 0 ? "text-amber-600" : "",
+      icon: LayoutTopIcon,
     },
   ]
 
@@ -46,7 +59,8 @@ function SummaryCards({ result }: SummaryCardsProps) {
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <HugeiconsIcon icon={card.icon} strokeWidth={2} />
               {card.title}
             </CardTitle>
           </CardHeader>
