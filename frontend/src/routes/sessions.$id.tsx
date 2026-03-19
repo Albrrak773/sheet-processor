@@ -25,10 +25,12 @@ import { DataTable } from "@/components/validation/editable-data-table/data-tabl
 import { ActionsBar } from "@/components/actions-bar/actions-bar"
 import { GenderColumnModal } from "@/components/validation/gender-column-modal"
 import { GenderMappingModal } from "@/components/validation/gender-mapping-modal"
+import { UniIdLookupModal } from "@/components/validation/uni-id-lookup-modal"
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
 import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
 import { SessionPageSkeleton } from "@/components/skeletons/session-page-skeleton"
+import { useIsAdmin } from "@/hooks/use-role"
 
 const PREFERRED_COLUMN_ORDER = [
   "name",
@@ -70,6 +72,7 @@ function SessionPage() {
   const { id } = Route.useParams()
   const queryClient = useQueryClient()
   const revalidate = useValidateFromRaw()
+  const isAdmin = useIsAdmin()
 
   const { data: session, isLoading } = useQuery({
     queryKey: ["session", id],
@@ -87,6 +90,10 @@ function SessionPage() {
   const [isSubmittingMappings, setIsSubmittingMappings] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [rowToDelete, setRowToDelete] = React.useState<number | null>(null)
+  const [uniIdLookupOpen, setUniIdLookupOpen] = React.useState(false)
+  const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(
+    null
+  )
 
   React.useEffect(() => {
     setData([])
@@ -122,12 +129,13 @@ function SessionPage() {
   }, [session])
 
   const handleCellEdit = React.useCallback(
-    (rowIndex: number, columnId: string, value: string) => {
+    (rowNum: number, columnId: string, value: string) => {
       setData((prev) => {
+        const index = prev.findIndex((row) => row._rowNum === rowNum)
+        if (index === -1) return prev
         const updated = [...prev]
-        const rowNum = prev[rowIndex]?._rowNum
-        updated[rowIndex] = {
-          ...updated[rowIndex],
+        updated[index] = {
+          ...updated[index],
           [columnId]: value,
           _rowNum: rowNum,
         }
@@ -138,15 +146,20 @@ function SessionPage() {
     []
   )
 
-  const handleRowDeleteRequest = React.useCallback((rowIndex: number) => {
-    setRowToDelete(rowIndex)
+  const handleRowDeleteRequest = React.useCallback((rowNum: number) => {
+    setRowToDelete(rowNum)
     setDeleteDialogOpen(true)
+  }, [])
+
+  const handleUniIdLookup = React.useCallback((rowNum: number) => {
+    setLookupRowIndex(rowNum)
+    setUniIdLookupOpen(true)
   }, [])
 
   function handleRowDeleteConfirm() {
     if (rowToDelete === null || !session) return
 
-    const updatedData = data.filter((_, index) => index !== rowToDelete)
+    const updatedData = data.filter((row) => row._rowNum !== rowToDelete)
     const reindexedData = updatedData.map((row, index) => ({
       ...row,
       _rowNum: index + 2,
@@ -346,6 +359,59 @@ function SessionPage() {
     }
   }
 
+  function getUniIdColumnKey(): string | null {
+    if (!validationResult) return null
+    const column = validationResult.columns_found.find((c) => {
+      const match = c.match(/\(([^)]+)\)$/)
+      const canonical = match ? match[1].trim().toLowerCase() : c.toLowerCase()
+      return canonical === "university id"
+    })
+    if (!column) return null
+    const keyMatch = column.match(/^(.+?)\s*\([^)]+\)$/)
+    return keyMatch ? keyMatch[1].trim() : column
+  }
+
+  function handleUniIdApply(uniId: string) {
+    if (lookupRowIndex === null) return
+
+    const columnKey = getUniIdColumnKey()
+    if (!columnKey) {
+      toast.error("University ID column not found")
+      return
+    }
+
+    setData((prev) => {
+      const index = prev.findIndex((row) => row._rowNum === lookupRowIndex)
+      if (index === -1) return prev
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [columnKey]: uniId,
+        _rowNum: lookupRowIndex,
+      }
+      return updated
+    })
+    setHasChanges(true)
+    setUniIdLookupOpen(false)
+    setLookupRowIndex(null)
+    toast.success("University ID applied")
+  }
+
+  function getRowName(rowNum: number): string | null {
+    const row = data.find((r) => r._rowNum === rowNum)
+    if (!row || !validationResult) return null
+    const nameColumn = validationResult.columns_found.find((c) => {
+      const match = c.match(/\(([^)]+)\)$/)
+      const canonical = match ? match[1].trim().toLowerCase() : c.toLowerCase()
+      return canonical === "name"
+    })
+    if (!nameColumn) return null
+    const keyMatch = nameColumn.match(/^(.+?)\s*\([^)]+\)$/)
+    const key = keyMatch ? keyMatch[1].trim() : nameColumn
+    const value = row[key]
+    return value != null ? String(value).trim() : null
+  }
+
   if (isLoading || !session || !validationResult) {
     return <SessionPageSkeleton />
   }
@@ -399,6 +465,8 @@ function SessionPage() {
         suggestedFixes={validationResult.suggested_fixes}
         onCellEdit={handleCellEdit}
         onRowDelete={handleRowDeleteRequest}
+        showUniIdLookup={isAdmin}
+        onUniIdLookup={handleUniIdLookup}
       />
 
       <GenderColumnModal
@@ -416,13 +484,33 @@ function SessionPage() {
         isSubmitting={isSubmittingMappings}
       />
 
+      <UniIdLookupModal
+        open={uniIdLookupOpen}
+        onOpenChange={setUniIdLookupOpen}
+        row={
+          lookupRowIndex !== null
+            ? (data.find((row) => row._rowNum === lookupRowIndex) ?? null)
+            : null
+        }
+        columnNames={columnNames}
+        onApply={handleUniIdApply}
+      />
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Row</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this row? This action cannot be
-              undone.
+              Are you sure you want to delete{" "}
+              {rowToDelete !== null && getRowName(rowToDelete) ? (
+                <>
+                  <span className="font-medium">{getRowName(rowToDelete)}</span>{" "}
+                  (row {rowToDelete})
+                </>
+              ) : (
+                "this row"
+              )}
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

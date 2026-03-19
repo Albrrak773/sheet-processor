@@ -43,12 +43,12 @@ async def list_members(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.post("/lookup", response_model=MemberRead)
+@router.post("/lookup", response_model=list[MemberRead])
 async def lookup_uni_id(
     request_body: MemberLookupRequest,
     session: AsyncSession = Depends(get_session),
     _: Annotated[None, Depends(require_admin)] = None,
-) -> MemberRead:
+) -> list[MemberRead]:
     if not any([request_body.name, request_body.email, request_body.phone_number]):
         raise HTTPException(
             status_code=400,
@@ -56,28 +56,29 @@ async def lookup_uni_id(
         )
 
     try:
-        member = await db.lookup_member(
+        members = await db.lookup_members(
             session,
             name=request_body.name,
             email=request_body.email,
             phone_number=request_body.phone_number,
         )
-        if member is None:
-            raise HTTPException(status_code=404, detail="Member not found")
 
-        return MemberRead(
-            id=member.id,  # type: ignore[arg-type]
-            name=member.name,
-            email=member.email,
-            phone_number=member.phone_number,
-            uni_id=member.uni_id,
-            gender=member.gender,
-            uni_level=member.uni_level,
-            uni_college=member.uni_college,
-            created_at=member.created_at,
-            updated_at=member.updated_at,
-            is_authenticated=member.is_authenticated,
-        )
+        return [
+            MemberRead(
+                id=member.id,  # type: ignore[arg-type]
+                name=member.name,
+                email=member.email,
+                phone_number=member.phone_number,
+                uni_id=member.uni_id,
+                gender=member.gender,
+                uni_level=member.uni_level,
+                uni_college=member.uni_college,
+                created_at=member.created_at,
+                updated_at=member.updated_at,
+                is_authenticated=member.is_authenticated,
+            )
+            for member in members
+        ]
     except HTTPException:
         raise
     except Exception as e:

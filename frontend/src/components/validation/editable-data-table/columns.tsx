@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete01Icon } from "@hugeicons/core-free-icons"
+import { Delete01Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import { EditableCell } from "./editable-cell"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { InvalidRow, SuggestedFix, TableRowData } from "@/lib/types"
@@ -25,8 +25,10 @@ interface ColumnsConfig {
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
   suggestedFixes: Array<SuggestedFix>
-  onCellEdit: (rowIndex: number, columnId: string, value: string) => void
-  onRowDelete?: (rowIndex: number) => void
+  onCellEdit: (rowNum: number, columnId: string, value: string) => void
+  onRowDelete?: (rowNum: number) => void
+  showUniIdLookup?: boolean
+  onUniIdLookup?: (rowNum: number) => void
 }
 
 export function buildColumns({
@@ -35,6 +37,8 @@ export function buildColumns({
   suggestedFixes,
   onCellEdit,
   onRowDelete,
+  showUniIdLookup,
+  onUniIdLookup,
 }: ColumnsConfig): Array<ColumnDef<TableRowData>> {
   const columnInfos: Array<ColumnInfo> = columnNames.map((name) => ({
     displayName: name,
@@ -128,7 +132,7 @@ export function buildColumns({
         return (
           <EditableCell
             value={cellValue}
-            rowIndex={row.index}
+            rowNum={rowNum}
             columnId={originalKey}
             error={error?.reason}
             suggestedValue={
@@ -144,29 +148,54 @@ export function buildColumns({
   const actionsColumn: ColumnDef<TableRowData> = {
     id: "_actions",
     header: "",
-    size: 50,
+    size: 80,
     cell: ({ row }) => {
-      if (!onRowDelete) return null
+      const hasLookup = showUniIdLookup && onUniIdLookup
+      const hasDelete = !!onRowDelete
+      const rowNum = row.original._rowNum
+
+      if (!hasLookup && !hasDelete) return null
 
       return (
-        <div className="flex items-center justify-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={() => onRowDelete(row.index)}
-              >
-                <HugeiconsIcon
-                  icon={Delete01Icon}
-                  className="h-4 w-4"
-                  strokeWidth={2}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">Delete row</TooltipContent>
-          </Tooltip>
+        <div className="flex items-center justify-center gap-1">
+          {hasLookup && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => onUniIdLookup(rowNum)}
+                >
+                  <HugeiconsIcon
+                    icon={Search01Icon}
+                    className="h-4 w-4"
+                    strokeWidth={2}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Lookup member ID</TooltipContent>
+            </Tooltip>
+          )}
+          {hasDelete && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={() => onRowDelete(rowNum)}
+                >
+                  <HugeiconsIcon
+                    icon={Delete01Icon}
+                    className="h-4 w-4"
+                    strokeWidth={2}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Delete row</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       )
     },

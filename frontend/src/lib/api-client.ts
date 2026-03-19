@@ -4,6 +4,7 @@ import type {
   GenderValue,
   Header,
   HeaderAliasRead,
+  MemberLookupRequest,
   MemberRead,
   NameBatchResponse,
   NameRead,
@@ -270,4 +271,18 @@ export async function updateNameGender(
 // Members
 export async function listMembers(): Promise<Array<MemberRead>> {
   return request<Array<MemberRead>>("/uni-id", {}, true)
+}
+
+export async function lookupMembers(
+  params: MemberLookupRequest
+): Promise<Array<MemberRead>> {
+  return request<Array<MemberRead>>(
+    "/uni-id/lookup",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    },
+    true
+  )
 }

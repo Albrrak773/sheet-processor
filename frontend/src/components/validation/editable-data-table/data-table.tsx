@@ -28,8 +28,10 @@ interface DataTableProps {
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
   suggestedFixes: Array<SuggestedFix>
-  onCellEdit: (rowIndex: number, columnId: string, value: string) => void
-  onRowDelete?: (rowIndex: number) => void
+  onCellEdit: (rowNum: number, columnId: string, value: string) => void
+  onRowDelete?: (rowNum: number) => void
+  showUniIdLookup?: boolean
+  onUniIdLookup?: (rowNum: number) => void
 }
 
 function DataTable({
@@ -39,6 +41,8 @@ function DataTable({
   suggestedFixes,
   onCellEdit,
   onRowDelete,
+  showUniIdLookup,
+  onUniIdLookup,
 }: DataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [filter, setFilter] = React.useState<FilterValue>("all")
@@ -66,8 +70,18 @@ function DataTable({
         suggestedFixes,
         onCellEdit,
         onRowDelete,
+        showUniIdLookup,
+        onUniIdLookup,
       }),
-    [columnNames, invalidRows, suggestedFixes, onCellEdit, onRowDelete]
+    [
+      columnNames,
+      invalidRows,
+      suggestedFixes,
+      onCellEdit,
+      onRowDelete,
+      showUniIdLookup,
+      onUniIdLookup,
+    ]
   )
 
   const table = useReactTable({

@@ -142,3 +142,9 @@ export interface MemberRead {
   updated_at: string
   is_authenticated: boolean
 }
+
+export interface MemberLookupRequest {
+  name?: string
+  email?: string
+  phone_number?: string
+}

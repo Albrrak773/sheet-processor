@@ -8,16 +8,16 @@ import { cn } from "@/lib/utils"
 
 interface EditableCellProps {
   value: string
-  rowIndex: number
+  rowNum: number
   columnId: string
   error?: string
   suggestedValue?: string
-  onSave: (rowIndex: number, columnId: string, value: string) => void
+  onSave: (rowNum: number, columnId: string, value: string) => void
 }
 
 function EditableCell({
   value,
-  rowIndex,
+  rowNum,
   columnId,
   error,
   suggestedValue,
@@ -69,7 +69,7 @@ function EditableCell({
     setIsEditing(false)
     setIsSelected(false)
     if (editValue !== value) {
-      onSave(rowIndex, columnId, editValue)
+      onSave(rowNum, columnId, editValue)
     }
   }
 
