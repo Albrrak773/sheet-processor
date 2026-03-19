@@ -2,12 +2,14 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Copy01Icon,
   Download04Icon,
+  GitMergeIcon,
   RefreshIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import type { RowData } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +53,8 @@ interface ActionsBarProps {
   hasChanges: boolean
   showGenderButton?: boolean
   onShowGenderModal?: () => void
+  duplicateGroupCount?: number
+  onShowDuplicateResolver?: () => void
 }
 
 function ActionsBar({
@@ -61,6 +65,8 @@ function ActionsBar({
   hasChanges,
   showGenderButton = false,
   onShowGenderModal,
+  duplicateGroupCount = 0,
+  onShowDuplicateResolver,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
     const tsv = rowsToTsv(data, columnNames)
@@ -93,6 +99,23 @@ function ActionsBar({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
+        {duplicateGroupCount > 0 && onShowDuplicateResolver && (
+          <Button
+            variant="outline"
+            onClick={onShowDuplicateResolver}
+            className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+          >
+            <HugeiconsIcon icon={GitMergeIcon} strokeWidth={2} />
+            Resolve Duplicates
+            <Badge
+              variant="secondary"
+              className="ml-1 bg-purple-100 text-purple-700"
+            >
+              {duplicateGroupCount}
+            </Badge>
+          </Button>
+        )}
+
         {showGenderButton && onShowGenderModal && (
           <Button variant="outline" onClick={onShowGenderModal}>
             <HugeiconsIcon icon={UserIcon} strokeWidth={2} />

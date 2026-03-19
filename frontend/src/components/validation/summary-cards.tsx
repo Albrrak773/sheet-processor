@@ -9,6 +9,9 @@ interface SummaryCardsProps {
 function SummaryCards({ result }: SummaryCardsProps) {
   const invalidCount = new Set(result.invalid_rows.map((r) => r.row)).size
   const validCount = result.total_rows - invalidCount
+  const duplicateCount = new Set(
+    result.duplicate_rows.flatMap((d) => d.duplicate_rows)
+  ).size
 
   const cards = [
     {
@@ -27,6 +30,11 @@ function SummaryCards({ result }: SummaryCardsProps) {
       className: invalidCount > 0 ? "text-red-600" : "",
     },
     {
+      title: "Duplicates",
+      value: duplicateCount,
+      className: duplicateCount > 0 ? "text-purple-600" : "",
+    },
+    {
       title: "Missing Columns",
       value: result.missing_columns.length,
       className: result.missing_columns.length > 0 ? "text-amber-600" : "",
@@ -34,7 +42,7 @@ function SummaryCards({ result }: SummaryCardsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="pb-2">

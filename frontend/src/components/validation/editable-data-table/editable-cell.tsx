@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { DuplicateType } from "@/lib/types"
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +12,8 @@ interface EditableCellProps {
   rowNum: number
   columnId: string
   error?: string
-  suggestedValue?: string
+  duplicateRows?: Array<number>
+  duplicateType?: DuplicateType
   onSave: (rowNum: number, columnId: string, value: string) => void
 }
 
@@ -20,7 +22,8 @@ function EditableCell({
   rowNum,
   columnId,
   error,
-  suggestedValue,
+  duplicateRows,
+  duplicateType,
   onSave,
 }: EditableCellProps) {
   const [isSelected, setIsSelected] = React.useState(false)
@@ -92,7 +95,7 @@ function EditableCell({
   }
 
   const hasError = !!error
-  const hasSuggestion = !!suggestedValue
+  const hasDuplicate = duplicateRows && duplicateRows.length > 0
 
   return (
     <div
@@ -100,15 +103,16 @@ function EditableCell({
       className={cn(
         "relative min-w-0 overflow-hidden",
         hasError && "border-l-4 border-l-red-500",
-        !hasError && hasSuggestion && "border-l-4 border-l-amber-500"
+        !hasError && hasDuplicate && "border-l-4 border-l-purple-500"
       )}
     >
       <CellDisplay
         value={value}
         error={error}
-        suggestedValue={suggestedValue}
+        duplicateRows={duplicateRows}
+        duplicateType={duplicateType}
         hasError={hasError}
-        hasSuggestion={hasSuggestion}
+        hasDuplicate={hasDuplicate}
         isSelected={isSelected}
         isEditing={isEditing}
         onSelect={handleSelect}
@@ -134,9 +138,10 @@ function EditableCell({
 function CellDisplay({
   value,
   error,
-  suggestedValue,
+  duplicateRows,
+  duplicateType,
   hasError,
-  hasSuggestion,
+  hasDuplicate,
   isSelected,
   isEditing,
   onSelect,
@@ -145,9 +150,10 @@ function CellDisplay({
 }: {
   value: string
   error?: string
-  suggestedValue?: string
+  duplicateRows?: Array<number>
+  duplicateType?: DuplicateType
   hasError: boolean
-  hasSuggestion: boolean
+  hasDuplicate: boolean | undefined
   isSelected: boolean
   isEditing: boolean
   onSelect: () => void
@@ -167,22 +173,24 @@ function CellDisplay({
         hasError &&
           "bg-red-100 font-medium text-red-900 dark:bg-red-950/50 dark:text-red-300",
         !hasError &&
-          hasSuggestion &&
-          "bg-amber-100 font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-300"
+          hasDuplicate &&
+          "bg-purple-100 font-medium text-purple-900 dark:bg-purple-950/50 dark:text-purple-300"
       )}
     >
       {value || <span className="text-muted-foreground italic">empty</span>}
     </div>
   )
 
-  if (hasError || hasSuggestion) {
+  if (hasError || hasDuplicate) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>{content}</TooltipTrigger>
         <TooltipContent side="top">
           {hasError && <p className="text-red-500">{error}</p>}
-          {hasSuggestion && (
-            <p className="text-amber-500">Suggested: {suggestedValue}</p>
+          {hasDuplicate && duplicateRows && duplicateType && (
+            <p className="text-purple-500">
+              Duplicate {duplicateType} in rows: {duplicateRows.join(", ")}
+            </p>
           )}
         </TooltipContent>
       </Tooltip>

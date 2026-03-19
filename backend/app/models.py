@@ -7,6 +7,7 @@ from pydantic import BaseModel
 RowData: TypeAlias = dict[str, Any]
 ColumnName: TypeAlias = str
 InvalidType = Literal["empty_value", "invalid_value"]
+DuplicateType = Literal["university id", "email", "phone number"]
 
 DEFAULT_ALIASES: dict[ColumnName, list[str]] = {
     "name": ["full name", "full_name", "student name"],
@@ -34,6 +35,14 @@ class SuggestedFix(BaseModel):
     suggested: Any
 
 
+class DuplicateInfo(BaseModel):
+    """Information about a set of duplicate rows."""
+
+    duplicate_type: DuplicateType
+    duplicate_rows: list[int]  # Row numbers (1-indexed, starting from 2 for data rows)
+    value: str  # The duplicate value
+
+
 class UploadResponse(BaseModel):
     url: str
 
@@ -45,7 +54,7 @@ class ValidationResponse(BaseModel):
     missing_columns: list[str]
     unmapped_columns: list[str] = []
     invalid_rows: list[InvalidRow]
-    suggested_fixes: list[SuggestedFix]
+    duplicate_rows: list[DuplicateInfo] = []
     details: list[str] = []
     data: list[RowData] = []
     raw_csv: str = ""

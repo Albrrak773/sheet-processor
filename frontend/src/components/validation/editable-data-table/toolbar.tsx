@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-type FilterValue = "all" | "valid" | "invalid"
+type FilterValue = "all" | "valid" | "invalid" | "duplicate"
 
 interface ToolbarProps {
   filter: FilterValue
@@ -12,6 +12,7 @@ interface ToolbarProps {
   onSearchChange: (value: string) => void
   totalRows: number
   invalidRowCount: number
+  duplicateRowCount: number
 }
 
 function Toolbar({
@@ -21,6 +22,7 @@ function Toolbar({
   onSearchChange,
   totalRows,
   invalidRowCount,
+  duplicateRowCount,
 }: ToolbarProps) {
   const validCount = totalRows - invalidRowCount
 
@@ -28,6 +30,7 @@ function Toolbar({
     { value: "all", label: "All", count: totalRows },
     { value: "valid", label: "Valid", count: validCount },
     { value: "invalid", label: "Invalid", count: invalidRowCount },
+    { value: "duplicate", label: "Duplicate", count: duplicateRowCount },
   ]
 
   return (
@@ -45,7 +48,10 @@ function Toolbar({
                 "bg-red-600 hover:bg-red-700",
               filter === f.value &&
                 f.value === "valid" &&
-                "bg-green-600 hover:bg-green-700"
+                "bg-green-600 hover:bg-green-700",
+              filter === f.value &&
+                f.value === "duplicate" &&
+                "bg-purple-600 hover:bg-purple-700"
             )}
           >
             {f.label}

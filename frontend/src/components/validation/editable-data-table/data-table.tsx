@@ -11,7 +11,7 @@ import { buildColumns } from "./columns"
 import { Toolbar } from "./toolbar"
 import type { FilterValue } from "./toolbar"
 import type { SortingState } from "@tanstack/react-table"
-import type { InvalidRow, SuggestedFix, TableRowData } from "@/lib/types"
+import type { DuplicateInfo, InvalidRow, TableRowData } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -27,7 +27,7 @@ interface DataTableProps {
   data: Array<TableRowData>
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
-  suggestedFixes: Array<SuggestedFix>
+  duplicateRows: Array<DuplicateInfo>
   onCellEdit: (rowNum: number, columnId: string, value: string) => void
   onRowDelete?: (rowNum: number) => void
   showUniIdLookup?: boolean
@@ -38,7 +38,7 @@ function DataTable({
   data,
   columnNames,
   invalidRows,
-  suggestedFixes,
+  duplicateRows,
   onCellEdit,
   onRowDelete,
   showUniIdLookup,
@@ -53,21 +53,30 @@ function DataTable({
     [invalidRows]
   )
 
+  const duplicateRowNumbers = React.useMemo(
+    () => new Set(duplicateRows.flatMap((d) => d.duplicate_rows)),
+    [duplicateRows]
+  )
+
   const filteredData = React.useMemo(() => {
     if (filter === "all") return data
     return data.filter((row) => {
       const rowNum = row._rowNum
       const isInvalid = invalidRowNumbers.has(rowNum)
-      return filter === "invalid" ? isInvalid : !isInvalid
+      const isDuplicate = duplicateRowNumbers.has(rowNum)
+      if (filter === "invalid") return isInvalid
+      if (filter === "duplicate") return isDuplicate
+      // "valid" means not invalid
+      return !isInvalid
     })
-  }, [data, filter, invalidRowNumbers])
+  }, [data, filter, invalidRowNumbers, duplicateRowNumbers])
 
   const columns = React.useMemo(
     () =>
       buildColumns({
         columnNames,
         invalidRows,
-        suggestedFixes,
+        duplicateRows,
         onCellEdit,
         onRowDelete,
         showUniIdLookup,
@@ -76,7 +85,7 @@ function DataTable({
     [
       columnNames,
       invalidRows,
-      suggestedFixes,
+      duplicateRows,
       onCellEdit,
       onRowDelete,
       showUniIdLookup,
@@ -113,6 +122,7 @@ function DataTable({
         onSearchChange={setGlobalFilter}
         totalRows={data.length}
         invalidRowCount={invalidRowNumbers.size}
+        duplicateRowCount={duplicateRowNumbers.size}
       />
 
       <div className="overflow-auto border">

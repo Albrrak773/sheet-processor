@@ -26,6 +26,7 @@ import { ActionsBar } from "@/components/actions-bar/actions-bar"
 import { GenderColumnModal } from "@/components/validation/gender-column-modal"
 import { GenderMappingModal } from "@/components/validation/gender-mapping-modal"
 import { UniIdLookupModal } from "@/components/validation/uni-id-lookup-modal"
+import { DuplicateResolverModal } from "@/components/validation/duplicate-resolver-modal"
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
 import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
@@ -94,6 +95,7 @@ function SessionPage() {
   const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(
     null
   )
+  const [duplicateResolverOpen, setDuplicateResolverOpen] = React.useState(false)
 
   React.useEffect(() => {
     setData([])
@@ -412,6 +414,55 @@ function SessionPage() {
     return value != null ? String(value).trim() : null
   }
 
+  function handleDuplicateResolve(
+    keepRowNum: number,
+    deleteRowNums: Array<number>
+  ) {
+    if (!session) return
+
+    const deleteSet = new Set(deleteRowNums)
+    const updatedData = data.filter((row) => !deleteSet.has(row._rowNum))
+    const reindexedData = updatedData.map((row, index) => ({
+      ...row,
+      _rowNum: index + 2,
+    }))
+
+    setData(reindexedData)
+
+    const dataWithoutRowNum: Array<RowData> = reindexedData.map(
+      ({ _rowNum: _, ...rest }) => rest
+    )
+    const tsv = rowsToTsv(dataWithoutRowNum)
+
+    revalidate.mutate(
+      { rawData: tsv },
+      {
+        onSuccess: async (result) => {
+          const dataWithRowNum = result.data.map((row, index) => ({
+            ...row,
+            _rowNum: index + 2,
+          }))
+
+          try {
+            await updateSession(session.id, { data: result.data })
+            setValidationResult(result)
+            setData(dataWithRowNum)
+            setHasChanges(false)
+            queryClient.invalidateQueries({ queryKey: ["session", id] })
+            toast.success(
+              `Kept row ${keepRowNum}, deleted ${deleteRowNums.length} duplicate${deleteRowNums.length > 1 ? "s" : ""}`
+            )
+          } catch {
+            toast.error("Failed to save changes after duplicate resolution")
+          }
+        },
+        onError: () => {
+          toast.error("Validation failed after duplicate resolution")
+        },
+      }
+    )
+  }
+
   if (isLoading || !session || !validationResult) {
     return <SessionPageSkeleton />
   }
@@ -456,13 +507,15 @@ function SessionPage() {
         hasChanges={hasChanges}
         showGenderButton={hasGenderMissing}
         onShowGenderModal={() => setGenderModalOpen(true)}
+        duplicateGroupCount={validationResult.duplicate_rows.length}
+        onShowDuplicateResolver={() => setDuplicateResolverOpen(true)}
       />
 
       <DataTable
         data={data}
         columnNames={columnNames}
         invalidRows={validationResult.invalid_rows}
-        suggestedFixes={validationResult.suggested_fixes}
+        duplicateRows={validationResult.duplicate_rows}
         onCellEdit={handleCellEdit}
         onRowDelete={handleRowDeleteRequest}
         showUniIdLookup={isAdmin}
@@ -494,6 +547,15 @@ function SessionPage() {
         }
         columnNames={columnNames}
         onApply={handleUniIdApply}
+      />
+
+      <DuplicateResolverModal
+        open={duplicateResolverOpen}
+        onOpenChange={setDuplicateResolverOpen}
+        duplicateGroups={validationResult.duplicate_rows}
+        data={data}
+        columnNames={columnNames}
+        onResolve={handleDuplicateResolve}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

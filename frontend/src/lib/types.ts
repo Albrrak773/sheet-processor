@@ -12,6 +12,14 @@ export interface SuggestedFix {
   suggested: unknown
 }
 
+export type DuplicateType = "university id" | "email" | "phone number"
+
+export interface DuplicateInfo {
+  duplicate_type: DuplicateType
+  duplicate_rows: Array<number>
+  value: string
+}
+
 export interface ValidationResponse {
   valid: boolean
   total_rows: number
@@ -19,7 +27,7 @@ export interface ValidationResponse {
   missing_columns: Array<string>
   unmapped_columns: Array<string>
   invalid_rows: Array<InvalidRow>
-  suggested_fixes: Array<SuggestedFix>
+  duplicate_rows: Array<DuplicateInfo>
   details: Array<string>
   data: Array<RowData>
   raw_csv: string

@@ -2,7 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Delete01Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import { EditableCell } from "./editable-cell"
 import type { ColumnDef } from "@tanstack/react-table"
-import type { InvalidRow, SuggestedFix, TableRowData } from "@/lib/types"
+import type { DuplicateInfo, InvalidRow, TableRowData } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
@@ -16,15 +16,21 @@ function extractOriginalKey(displayName: string): string {
   return match ? match[1].trim() : displayName
 }
 
+function getCanonicalName(col: string): string {
+  const match = col.match(/\(([^)]+)\)$/)
+  return match ? match[1].trim().toLowerCase() : col.toLowerCase()
+}
+
 interface ColumnInfo {
   displayName: string
   originalKey: string
+  canonicalName: string
 }
 
 interface ColumnsConfig {
   columnNames: Array<string>
   invalidRows: Array<InvalidRow>
-  suggestedFixes: Array<SuggestedFix>
+  duplicateRows: Array<DuplicateInfo>
   onCellEdit: (rowNum: number, columnId: string, value: string) => void
   onRowDelete?: (rowNum: number) => void
   showUniIdLookup?: boolean
@@ -34,7 +40,7 @@ interface ColumnsConfig {
 export function buildColumns({
   columnNames,
   invalidRows,
-  suggestedFixes,
+  duplicateRows,
   onCellEdit,
   onRowDelete,
   showUniIdLookup,
@@ -43,6 +49,7 @@ export function buildColumns({
   const columnInfos: Array<ColumnInfo> = columnNames.map((name) => ({
     displayName: name,
     originalKey: extractOriginalKey(name),
+    canonicalName: getCanonicalName(name),
   }))
 
   const statusColumn: ColumnDef<TableRowData> = {
@@ -109,7 +116,7 @@ export function buildColumns({
   }
 
   const dataColumns: Array<ColumnDef<TableRowData>> = columnInfos.map(
-    ({ displayName, originalKey }) => ({
+    ({ displayName, originalKey, canonicalName }) => ({
       id: displayName,
       accessorFn: (row: TableRowData) => String(row[originalKey] ?? ""),
       header: displayName,
@@ -123,11 +130,17 @@ export function buildColumns({
             (ir.column === originalKey || ir.column === displayName)
         )
 
-        const suggestion = suggestedFixes.find(
-          (sf) =>
-            sf.row === rowNum &&
-            (sf.column === originalKey || sf.column === displayName)
+        // Find duplicate info for this cell's column and row
+        const duplicateInfo = duplicateRows.find(
+          (d) =>
+            d.duplicate_type === canonicalName &&
+            d.duplicate_rows.includes(rowNum)
         )
+
+        // Get other rows that have the same duplicate value (excluding current row)
+        const otherDuplicateRows = duplicateInfo
+          ? duplicateInfo.duplicate_rows.filter((r) => r !== rowNum)
+          : []
 
         return (
           <EditableCell
@@ -135,9 +148,8 @@ export function buildColumns({
             rowNum={rowNum}
             columnId={originalKey}
             error={error?.reason}
-            suggestedValue={
-              suggestion ? String(suggestion.suggested) : undefined
-            }
+            duplicateRows={otherDuplicateRows}
+            duplicateType={duplicateInfo?.duplicate_type}
             onSave={onCellEdit}
           />
         )
