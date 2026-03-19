@@ -9,6 +9,16 @@ import type {
   ValidationResponse,
 } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { SummaryCards } from "@/components/validation/summary-cards"
 import { MissingColumnsAlert } from "@/components/validation/missing-columns-alert"
 import { DataTable } from "@/components/validation/editable-data-table/data-table"
@@ -19,6 +29,38 @@ import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
 import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
 import { SessionPageSkeleton } from "@/components/skeletons/session-page-skeleton"
+
+const PREFERRED_COLUMN_ORDER = [
+  "name",
+  "university id",
+  "phone number",
+  "email",
+  "gender",
+] as const
+
+function reorderColumns(columns: Array<string>): Array<string> {
+  const remaining = new Set(columns)
+  const ordered: Array<string> = []
+
+  // Extract canonical name from "alias (canonical)" or use the column name directly
+  function getCanonicalName(col: string): string {
+    const match = col.match(/\(([^)]+)\)$/)
+    return match ? match[1].trim().toLowerCase() : col.toLowerCase()
+  }
+
+  for (const preferred of PREFERRED_COLUMN_ORDER) {
+    const found = columns.find((c) => {
+      const canonical = getCanonicalName(c)
+      return canonical === preferred
+    })
+    if (found) {
+      ordered.push(found)
+      remaining.delete(found)
+    }
+  }
+
+  return [...ordered, ...columns.filter((c) => remaining.has(c))]
+}
 
 export const Route = createFileRoute("/sessions/$id")({
   component: SessionPage,
@@ -43,6 +85,8 @@ function SessionPage() {
   const [genderMappingModalOpen, setGenderMappingModalOpen] =
     React.useState(false)
   const [isSubmittingMappings, setIsSubmittingMappings] = React.useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [rowToDelete, setRowToDelete] = React.useState<number | null>(null)
 
   React.useEffect(() => {
     setData([])
@@ -93,6 +137,56 @@ function SessionPage() {
     },
     []
   )
+
+  const handleRowDeleteRequest = React.useCallback((rowIndex: number) => {
+    setRowToDelete(rowIndex)
+    setDeleteDialogOpen(true)
+  }, [])
+
+  function handleRowDeleteConfirm() {
+    if (rowToDelete === null || !session) return
+
+    const updatedData = data.filter((_, index) => index !== rowToDelete)
+    const reindexedData = updatedData.map((row, index) => ({
+      ...row,
+      _rowNum: index + 2,
+    }))
+
+    setData(reindexedData)
+    setDeleteDialogOpen(false)
+    setRowToDelete(null)
+
+    const dataWithoutRowNum: Array<RowData> = reindexedData.map(
+      ({ _rowNum: _, ...rest }) => rest
+    )
+    const tsv = rowsToTsv(dataWithoutRowNum)
+
+    revalidate.mutate(
+      { rawData: tsv },
+      {
+        onSuccess: async (result) => {
+          const dataWithRowNum = result.data.map((row, index) => ({
+            ...row,
+            _rowNum: index + 2,
+          }))
+
+          try {
+            await updateSession(session.id, { data: result.data })
+            setValidationResult(result)
+            setData(dataWithRowNum)
+            setHasChanges(false)
+            queryClient.invalidateQueries({ queryKey: ["session", id] })
+            toast.success("Row deleted and data revalidated")
+          } catch {
+            toast.error("Failed to save changes after deletion")
+          }
+        },
+        onError: () => {
+          toast.error("Validation failed after deletion")
+        },
+      }
+    )
+  }
 
   async function handleSave() {
     if (!session) return
@@ -256,7 +350,7 @@ function SessionPage() {
     return <SessionPageSkeleton />
   }
 
-  const columnNames = validationResult.columns_found
+  const columnNames = reorderColumns(validationResult.columns_found)
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6 p-6">
@@ -290,6 +384,7 @@ function SessionPage() {
 
       <ActionsBar
         data={data}
+        columnNames={columnNames}
         onRevalidate={handleRevalidate}
         isRevalidating={revalidate.isPending}
         hasChanges={hasChanges}
@@ -303,6 +398,7 @@ function SessionPage() {
         invalidRows={validationResult.invalid_rows}
         suggestedFixes={validationResult.suggested_fixes}
         onCellEdit={handleCellEdit}
+        onRowDelete={handleRowDeleteRequest}
       />
 
       <GenderColumnModal
@@ -319,6 +415,27 @@ function SessionPage() {
         onConfirm={handleGenderMappingConfirm}
         isSubmitting={isSubmittingMappings}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Row</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this row? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleRowDeleteConfirm}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -29,6 +29,7 @@ interface DataTableProps {
   invalidRows: Array<InvalidRow>
   suggestedFixes: Array<SuggestedFix>
   onCellEdit: (rowIndex: number, columnId: string, value: string) => void
+  onRowDelete?: (rowIndex: number) => void
 }
 
 function DataTable({
@@ -37,6 +38,7 @@ function DataTable({
   invalidRows,
   suggestedFixes,
   onCellEdit,
+  onRowDelete,
 }: DataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [filter, setFilter] = React.useState<FilterValue>("all")
@@ -63,8 +65,9 @@ function DataTable({
         invalidRows,
         suggestedFixes,
         onCellEdit,
+        onRowDelete,
       }),
-    [columnNames, invalidRows, suggestedFixes, onCellEdit]
+    [columnNames, invalidRows, suggestedFixes, onCellEdit, onRowDelete]
   )
 
   const table = useReactTable({

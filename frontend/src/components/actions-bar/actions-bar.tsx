@@ -45,6 +45,7 @@ const GoogleSheetsIcon = () => (
 
 interface ActionsBarProps {
   data: Array<RowData>
+  columnNames: Array<string>
   onRevalidate: () => void
   isRevalidating: boolean
   hasChanges: boolean
@@ -54,6 +55,7 @@ interface ActionsBarProps {
 
 function ActionsBar({
   data,
+  columnNames,
   onRevalidate,
   isRevalidating,
   hasChanges,
@@ -61,30 +63,30 @@ function ActionsBar({
   onShowGenderModal,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
-    const tsv = rowsToTsv(data)
+    const tsv = rowsToTsv(data, columnNames)
     await navigator.clipboard.writeText(tsv)
     toast.success("Copied to clipboard")
   }
 
   async function handleOpenSheet() {
-    const tsv = rowsToTsv(data)
+    const tsv = rowsToTsv(data, columnNames)
     await navigator.clipboard.writeText(tsv)
     toast.success("Copied to clipboard, opening Google Sheets...")
     window.open("https://sheets.new", "_blank")
   }
 
   function handleDownloadCsv() {
-    downloadCsv(data)
+    downloadCsv(data, columnNames)
     toast.success("Downloaded as CSV")
   }
 
   function handleDownloadTsv() {
-    downloadTsv(data)
+    downloadTsv(data, columnNames)
     toast.success("Downloaded as TSV")
   }
 
   function handleDownloadXlsx() {
-    downloadXlsx(data)
+    downloadXlsx(data, columnNames)
     toast.success("Downloaded as XLSX")
   }
 

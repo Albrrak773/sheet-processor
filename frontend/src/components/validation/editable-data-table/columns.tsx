@@ -1,6 +1,9 @@
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Delete01Icon } from "@hugeicons/core-free-icons"
 import { EditableCell } from "./editable-cell"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { InvalidRow, SuggestedFix, TableRowData } from "@/lib/types"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +26,7 @@ interface ColumnsConfig {
   invalidRows: Array<InvalidRow>
   suggestedFixes: Array<SuggestedFix>
   onCellEdit: (rowIndex: number, columnId: string, value: string) => void
+  onRowDelete?: (rowIndex: number) => void
 }
 
 export function buildColumns({
@@ -30,6 +34,7 @@ export function buildColumns({
   invalidRows,
   suggestedFixes,
   onCellEdit,
+  onRowDelete,
 }: ColumnsConfig): Array<ColumnDef<TableRowData>> {
   const columnInfos: Array<ColumnInfo> = columnNames.map((name) => ({
     displayName: name,
@@ -136,5 +141,36 @@ export function buildColumns({
     })
   )
 
-  return [statusColumn, rowNumColumn, ...dataColumns]
+  const actionsColumn: ColumnDef<TableRowData> = {
+    id: "_actions",
+    header: "",
+    size: 50,
+    cell: ({ row }) => {
+      if (!onRowDelete) return null
+
+      return (
+        <div className="flex items-center justify-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => onRowDelete(row.index)}
+              >
+                <HugeiconsIcon
+                  icon={Delete01Icon}
+                  className="h-4 w-4"
+                  strokeWidth={2}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Delete row</TooltipContent>
+          </Tooltip>
+        </div>
+      )
+    },
+  }
+
+  return [statusColumn, rowNumColumn, ...dataColumns, actionsColumn]
 }
