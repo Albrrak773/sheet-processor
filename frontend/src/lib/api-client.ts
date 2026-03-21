@@ -1,3 +1,4 @@
+import { sanitizeUrl } from "./utils"
 import type {
   GenderAliasRead,
   GenderLookupResult,
@@ -62,7 +63,7 @@ export async function validateFromUrl(
   dataSource: string,
   ignoreHeaders?: Array<string>
 ): Promise<ValidationResponse> {
-  const params = new URLSearchParams({ data_source: dataSource })
+  const params = new URLSearchParams({ data_source: sanitizeUrl(dataSource) })
   if (ignoreHeaders) {
     for (const h of ignoreHeaders) {
       params.append("ignore_header", h)
