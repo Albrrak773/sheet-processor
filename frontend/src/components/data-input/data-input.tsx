@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
+import { useAuth } from "@clerk/tanstack-react-start"
 
 import type { ValidationResponse } from "@/lib/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -11,11 +12,13 @@ import {
   useValidateFromUrl,
 } from "@/lib/queries/validation"
 import { ColumnMappingModal } from "@/components/validation/column-mapping-modal"
+import { ValidationPreview } from "@/components/validation-preview/validation-preview"
 import { createAlias, createSession } from "@/lib/api-client"
 
 function DataInput() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { isSignedIn } = useAuth()
   const validateUrl = useValidateFromUrl()
   const validateRaw = useValidateFromRaw()
   const uploadAndValidate = useUploadAndValidate()
@@ -26,6 +29,8 @@ function DataInput() {
     rawData: string
   } | null>(null)
   const [isMappingSubmitting, setIsMappingSubmitting] = React.useState(false)
+  const [guestResult, setGuestResult] =
+    React.useState<ValidationResponse | null>(null)
 
   const isLoading =
     validateUrl.isPending ||
@@ -53,8 +58,10 @@ function DataInput() {
     if (result.missing_columns.length > 0) {
       setPendingValidation(result)
       setPendingSource({ rawData })
-    } else {
+    } else if (isSignedIn) {
       createSessionAndNavigate(result, rawData)
+    } else {
+      setGuestResult(result)
     }
   }
 
@@ -105,7 +112,11 @@ function DataInput() {
             onSuccess: (result) => {
               setPendingValidation(null)
               setPendingSource(null)
-              createSessionAndNavigate(result, rawData)
+              if (isSignedIn) {
+                createSessionAndNavigate(result, rawData)
+              } else {
+                setGuestResult(result)
+              }
             },
             onSettled: () => setIsMappingSubmitting(false),
           }
@@ -113,10 +124,14 @@ function DataInput() {
       } else {
         setPendingValidation(null)
         setPendingSource(null)
-        await createSessionAndNavigate(
-          { ...pendingValidation, missing_columns: [] },
-          ""
-        )
+        if (isSignedIn) {
+          await createSessionAndNavigate(
+            { ...pendingValidation, missing_columns: [] },
+            ""
+          )
+        } else {
+          setGuestResult({ ...pendingValidation, missing_columns: [] })
+        }
         setIsMappingSubmitting(false)
       }
     } catch (err) {
@@ -128,6 +143,16 @@ function DataInput() {
   function handleCancelMapping() {
     setPendingValidation(null)
     setPendingSource(null)
+  }
+
+  function handleGuestReset() {
+    setGuestResult(null)
+  }
+
+  if (guestResult) {
+    return (
+      <ValidationPreview result={guestResult} onReset={handleGuestReset} />
+    )
   }
 
   return (
