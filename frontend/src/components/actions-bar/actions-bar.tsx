@@ -100,8 +100,13 @@ function ActionsBar({
       await navigator.clipboard.writeText(token)
       toast.success("Export token copied to clipboard")
     } catch (error) {
-      if (error instanceof Error && error.message.includes("VITE_SIGNING_SECRET")) {
-        toast.error("Export token not configured. Please set VITE_SIGNING_SECRET.")
+      if (
+        error instanceof Error &&
+        error.message.includes("VITE_SIGNING_SECRET")
+      ) {
+        toast.error(
+          "Export token not configured. Please set VITE_SIGNING_SECRET."
+        )
       } else {
         toast.error("Failed to create export token")
       }

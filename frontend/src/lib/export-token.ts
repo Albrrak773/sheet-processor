@@ -1,4 +1,9 @@
-import type { ExportToken, ExportTokenMetadata, ExportTokenPayload, RowData } from "./types"
+import type {
+  ExportToken,
+  ExportTokenMetadata,
+  ExportTokenPayload,
+  RowData,
+} from "./types"
 
 function getSigningSecret(): string {
   const secret = import.meta.env.VITE_SIGNING_SECRET
@@ -10,7 +15,9 @@ function getSigningSecret(): string {
 
 function base64urlEncode(str: string): string {
   const bytes = new TextEncoder().encode(str)
-  const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join("")
+  const binString = Array.from(bytes, (byte) =>
+    String.fromCodePoint(byte)
+  ).join("")
   return btoa(binString)
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
@@ -35,13 +42,22 @@ function canonicalize(obj: unknown): string {
 async function hmacSign(secret: string, data: string): Promise<string> {
   const encoder = new TextEncoder()
   const keyData = encoder.encode(secret)
-  const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  )
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data))
   const hashArray = Array.from(new Uint8Array(signature))
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
 }
 
-export async function createExportToken(data: Array<RowData>, metadata: ExportTokenMetadata): Promise<string> {
+export async function createExportToken(
+  data: Array<RowData>,
+  metadata: ExportTokenMetadata
+): Promise<string> {
   const secret = getSigningSecret()
   const payload: ExportTokenPayload = { data, metadata }
   const canonicalPayload = canonicalize(payload)
@@ -56,12 +72,14 @@ export interface TokenVerificationResult {
   error?: string
 }
 
-export async function verifyExportToken(token: string): Promise<TokenVerificationResult> {
+export async function verifyExportToken(
+  token: string
+): Promise<TokenVerificationResult> {
   try {
     const secret = getSigningSecret()
     const decoded = base64urlDecode(token)
     const parsed: unknown = JSON.parse(decoded)
-    
+
     if (
       typeof parsed !== "object" ||
       parsed === null ||
@@ -71,19 +89,23 @@ export async function verifyExportToken(token: string): Promise<TokenVerificatio
     ) {
       return { valid: false, payload: null, error: "Invalid token format" }
     }
-    
+
     if (!parsed.signature.startsWith("hmac-sha256:")) {
       return { valid: false, payload: null, error: "Invalid signature format" }
     }
-    
+
     const signatureHash = parsed.signature.replace("hmac-sha256:", "")
     const canonicalPayload = canonicalize(parsed.payload)
     const expectedSignature = await hmacSign(secret, canonicalPayload)
-    
+
     if (signatureHash !== expectedSignature) {
-      return { valid: false, payload: null, error: "Signature verification failed" }
+      return {
+        valid: false,
+        payload: null,
+        error: "Signature verification failed",
+      }
     }
-    
+
     return { valid: true, payload: parsed.payload as ExportTokenPayload }
   } catch {
     return { valid: false, payload: null, error: "Failed to decode token" }

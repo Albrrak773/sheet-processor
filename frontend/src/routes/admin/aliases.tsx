@@ -9,6 +9,7 @@ import {
   TextIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
+import { useAuth } from "@clerk/tanstack-react-start"
 
 import type {
   GenderAliasRead,
@@ -53,7 +54,6 @@ import {
   HeaderAliasesTabSkeleton,
 } from "@/components/skeletons/aliases-page-skeleton"
 import { useIsAdmin } from "@/hooks/use-role"
-import { useAuth } from "@clerk/tanstack-react-start"
 
 export const Route = createFileRoute("/admin/aliases")({
   component: AliasesPage,
@@ -641,12 +641,18 @@ function GenderAliasesTab() {
 }
 
 function AliasesPage() {
+  const isAdmin = useIsAdmin()
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+      <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold">
         <HugeiconsIcon icon={TextIcon} className="size-6" />
         Manage Aliases
       </h1>
+      {!isAdmin && (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Read-only view. Admin access required to make changes.
+        </p>
+      )}
       <Tabs defaultValue="headers">
         <TabsList>
           <TabsTrigger value="headers">Header Aliases</TabsTrigger>

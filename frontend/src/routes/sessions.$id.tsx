@@ -95,7 +95,8 @@ function SessionPage() {
   const [lookupRowIndex, setLookupRowIndex] = React.useState<number | null>(
     null
   )
-  const [duplicateResolverOpen, setDuplicateResolverOpen] = React.useState(false)
+  const [duplicateResolverOpen, setDuplicateResolverOpen] =
+    React.useState(false)
 
   React.useEffect(() => {
     setData([])

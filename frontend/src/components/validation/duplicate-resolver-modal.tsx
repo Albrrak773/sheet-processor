@@ -68,7 +68,9 @@ function DuplicateResolverModal({
     setSelectedRowNum(null)
   }, [currentIndex])
 
-  const currentGroup = duplicateGroups[currentIndex] as DuplicateInfo | undefined
+  const currentGroup = duplicateGroups[currentIndex] as
+    | DuplicateInfo
+    | undefined
   const totalGroups = duplicateGroups.length
   const remainingGroups = totalGroups - currentIndex - 1
 
@@ -120,7 +122,10 @@ function DuplicateResolverModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             Duplicate Group {currentIndex + 1} of {totalGroups}
-            <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+            <Badge
+              variant="secondary"
+              className="bg-purple-100 text-purple-700"
+            >
               {formatDuplicateType(currentGroup.duplicate_type)}:{" "}
               {currentGroup.value}
             </Badge>
@@ -131,7 +136,7 @@ function DuplicateResolverModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-auto border rounded-md max-h-[50vh]">
+        <div className="max-h-[50vh] overflow-auto rounded-md border">
           <RadioGroup
             value={selectedRowNum?.toString() ?? ""}
             onValueChange={(value) => setSelectedRowNum(Number(value))}

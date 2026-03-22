@@ -278,7 +278,7 @@ export async function listMembers(): Promise<Array<MemberRead>> {
 }
 
 export async function lookupMembers(
-  params: MemberLookupRequest,
+  params: MemberLookupRequest
 ): Promise<Array<MemberRead>> {
   return request<Array<MemberRead>>(
     "/uni-id/lookup",
@@ -287,19 +287,16 @@ export async function lookupMembers(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
     },
-    true,
+    true
   )
 }
 
 export async function transformData(
-  data: Array<RowData>,
+  data: Array<RowData>
 ): Promise<TransformResponse> {
-  return request<TransformResponse>(
-    "/transforms",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data } as TransformRequest),
-    },
-  )
+  return request<TransformResponse>("/transforms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data } as TransformRequest),
+  })
 }

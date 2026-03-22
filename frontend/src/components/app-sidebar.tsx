@@ -294,7 +294,7 @@ function SidebarFooterContent() {
 
 export function AppSidebar({ children }: AppSidebarProps) {
   const navigate = useNavigate()
-  const { getToken } = useAuth()
+  const { getToken, isSignedIn } = useAuth()
   const isAdmin = useIsAdmin()
 
   React.useEffect(() => {
@@ -304,15 +304,30 @@ export function AppSidebar({ children }: AppSidebarProps) {
     })
   }, [getToken])
 
+  function handleNewSessionClick() {
+    if (!isSignedIn) {
+      toast.info("Sign in to create persistent sessions")
+    }
+    navigate({ to: isSignedIn ? "/" : "/guest" })
+  }
+
+  function handleLogoClick() {
+    navigate({ to: isSignedIn ? "/" : "/guest" })
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="flex flex-row items-center justify-between">
           <SidebarTrigger />
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLogoClick}
+            className="flex cursor-pointer items-center gap-2 bg-transparent p-0 hover:opacity-80"
+          >
             <img src="/favicon-32x32.png" alt="" className="size-5" />
             <span className="font-semibold">Sheet Processor</span>
-          </div>
+          </button>
           <div className="w-8" />
         </SidebarHeader>
         <SidebarContent>
@@ -320,7 +335,7 @@ export function AppSidebar({ children }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => navigate({ to: "/" })}>
+                  <SidebarMenuButton onClick={handleNewSessionClick}>
                     <HugeiconsIcon icon={Add01Icon} className="size-4" />
                     <span>New Session</span>
                   </SidebarMenuButton>
@@ -375,6 +390,12 @@ export function AppSidebar({ children }: AppSidebarProps) {
                   >
                     <HugeiconsIcon icon={Shield01Icon} className="size-4" />
                     <span>Token Validator</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate({ to: "/guest" })}>
+                    <HugeiconsIcon icon={TextIcon} className="size-4" />
+                    <span>Guest Validation</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

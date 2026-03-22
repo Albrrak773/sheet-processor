@@ -1,7 +1,6 @@
 import * as React from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import { useAuth } from "@clerk/tanstack-react-start"
 
 import type { ValidationResponse } from "@/lib/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -17,7 +16,6 @@ import { createAlias, createSession } from "@/lib/api-client"
 function DataInput() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { isSignedIn } = useAuth()
   const validateUrl = useValidateFromUrl()
   const validateRaw = useValidateFromRaw()
   const uploadAndValidate = useUploadAndValidate()
@@ -51,20 +49,12 @@ function DataInput() {
     navigate({ to: "/sessions/$id", params: { id: session.id } })
   }
 
-  function navigateToGuest(result: ValidationResponse) {
-    const key = `guest_validation_${Date.now()}`
-    sessionStorage.setItem(key, JSON.stringify(result))
-    navigate({ to: "/guest", search: { key } })
-  }
-
   function handleValidationResult(result: ValidationResponse, rawData: string) {
     if (result.missing_columns.length > 0) {
       setPendingValidation(result)
       setPendingSource({ rawData })
-    } else if (isSignedIn) {
-      createSessionAndNavigate(result, rawData)
     } else {
-      navigateToGuest(result)
+      createSessionAndNavigate(result, rawData)
     }
   }
 
@@ -115,11 +105,7 @@ function DataInput() {
             onSuccess: (result) => {
               setPendingValidation(null)
               setPendingSource(null)
-              if (isSignedIn) {
-                createSessionAndNavigate(result, rawData)
-              } else {
-                navigateToGuest(result)
-              }
+              createSessionAndNavigate(result, rawData)
             },
             onSettled: () => setIsMappingSubmitting(false),
           }
@@ -127,14 +113,10 @@ function DataInput() {
       } else {
         setPendingValidation(null)
         setPendingSource(null)
-        if (isSignedIn) {
-          await createSessionAndNavigate(
-            { ...pendingValidation, missing_columns: [] },
-            ""
-          )
-        } else {
-          navigateToGuest({ ...pendingValidation, missing_columns: [] })
-        }
+        createSessionAndNavigate(
+          { ...pendingValidation, missing_columns: [] },
+          ""
+        )
         setIsMappingSubmitting(false)
       }
     } catch (err) {

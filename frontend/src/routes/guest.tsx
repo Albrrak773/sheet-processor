@@ -1,175 +1,169 @@
 import * as React from "react"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeftIcon, Shield01Icon } from "@hugeicons/core-free-icons"
-import { toast } from "sonner"
+import { createFileRoute } from "@tanstack/react-router"
 
-import type { TableRowData, ValidationResponse } from "@/lib/types"
-import { Button } from "@/components/ui/button"
-import { SummaryCards } from "@/components/validation/summary-cards"
-import { DataTable } from "@/components/validation/editable-data-table/data-table"
-import { MissingColumnsAlert } from "@/components/validation/missing-columns-alert"
-import { transformData } from "@/lib/api-client"
-import { createExportToken } from "@/lib/export-token"
-
-const PREFERRED_COLUMN_ORDER = [
-  "name",
-  "university id",
-  "phone number",
-  "email",
-  "gender",
-] as const
-
-function reorderColumns(columns: Array<string>): Array<string> {
-  const remaining = new Set(columns)
-  const ordered: Array<string> = []
-
-  function getCanonicalName(col: string): string {
-    const match = col.match(/\(([^)]+)\)$/)
-    return match ? match[1].trim().toLowerCase() : col.toLowerCase()
-  }
-
-  for (const preferred of PREFERRED_COLUMN_ORDER) {
-    const found = columns.find((c) => {
-      const canonical = getCanonicalName(c)
-      return canonical === preferred
-    })
-    if (found) {
-      ordered.push(found)
-      remaining.delete(found)
-    }
-  }
-
-  return [...ordered, ...columns.filter((c) => remaining.has(c))]
-}
-
-interface GuestSearch {
-  key?: string
-}
+import type { ValidationResponse } from "@/lib/types"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { InputTabs } from "@/components/data-input/input-tabs"
+import { ValidationResults } from "@/components/guest/validation-results"
+import { ColumnMappingModal } from "@/components/validation/column-mapping-modal"
+import {
+  useUploadAndValidate,
+  useValidateFromRaw,
+  useValidateFromUrl,
+} from "@/lib/queries/validation"
+import { createAlias } from "@/lib/api-client"
 
 export const Route = createFileRoute("/guest")({
   component: GuestPage,
-  validateSearch: (search: Record<string, unknown>): GuestSearch => {
-    return {
-      key: typeof search.key === "string" ? search.key : undefined,
-    }
-  },
 })
 
 function GuestPage() {
-  const navigate = useNavigate()
-  const search = Route.useSearch()
   const [validationResult, setValidationResult] =
     React.useState<ValidationResponse | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+  const [pendingValidation, setPendingValidation] =
+    React.useState<ValidationResponse | null>(null)
+  const [pendingSource, setPendingSource] = React.useState<{
+    rawData: string
+  } | null>(null)
+  const [isMappingSubmitting, setIsMappingSubmitting] = React.useState(false)
 
-  React.useEffect(() => {
-    if (!search.key) {
-      navigate({ to: "/" })
-      return
+  const validateUrl = useValidateFromUrl()
+  const validateRaw = useValidateFromRaw()
+  const uploadAndValidate = useUploadAndValidate()
+
+  const isLoading =
+    validateUrl.isPending ||
+    validateRaw.isPending ||
+    uploadAndValidate.isPending ||
+    isMappingSubmitting
+
+  const error =
+    validateUrl.error || validateRaw.error || uploadAndValidate.error
+
+  function handleValidationResult(result: ValidationResponse, rawData: string) {
+    if (result.missing_columns.length > 0) {
+      setPendingValidation(result)
+      setPendingSource({ rawData })
+    } else {
+      setValidationResult(result)
     }
+  }
 
-    try {
-      const stored = sessionStorage.getItem(search.key)
-      if (!stored) {
-        setError("Validation data not found")
-        return
+  function handleValidateUrl(url: string) {
+    validateUrl.mutate(
+      { url },
+      {
+        onSuccess: (result) => handleValidationResult(result, result.raw_csv),
       }
-      sessionStorage.removeItem(search.key)
-      const parsed = JSON.parse(stored) as ValidationResponse
-      setValidationResult(parsed)
-    } catch {
-      setError("Invalid validation data")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [search.key, navigate])
+    )
+  }
 
-  async function handleCopyExportToken(result: ValidationResponse) {
+  function handleValidateRaw(data: string) {
+    validateRaw.mutate(
+      { rawData: data },
+      {
+        onSuccess: (result) => handleValidationResult(result, data),
+      }
+    )
+  }
+
+  function handleValidateFile(file: File) {
+    uploadAndValidate.mutate(
+      { file },
+      {
+        onSuccess: (result) => handleValidationResult(result, result.raw_csv),
+      }
+    )
+  }
+
+  async function handleColumnMapping(
+    mappings: Map<string, string>,
+    ignoredColumns: Array<string>
+  ) {
+    if (!pendingValidation || !pendingSource) return
+
+    setIsMappingSubmitting(true)
     try {
-      const transformed = await transformData(result.data)
-      const token = await createExportToken(transformed.data, {
-        row_count: transformed.data.length,
-        columns: transformed.columns,
-        valid: result.valid,
-        validated_at: new Date().toISOString(),
-        source: "sheet-processor",
-      })
-      await navigator.clipboard.writeText(token)
-      toast.success("Export token copied to clipboard")
-    } catch {
-      toast.error("Failed to create export token")
+      for (const [canonicalColumn, inputColumn] of mappings) {
+        await createAlias(canonicalColumn, inputColumn)
+      }
+
+      const rawData = pendingSource.rawData
+      validateRaw.mutate(
+        { rawData, ignoreHeaders: ignoredColumns },
+        {
+          onSuccess: (result) => {
+            setPendingValidation(null)
+            setPendingSource(null)
+            setValidationResult(result)
+          },
+          onSettled: () => setIsMappingSubmitting(false),
+        }
+      )
+    } catch (err) {
+      setIsMappingSubmitting(false)
+      console.error("Failed to create aliases:", err)
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
+  function handleCancelMapping() {
+    setPendingValidation(null)
+    setPendingSource(null)
   }
 
-  if (error || !validationResult) {
-    return (
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col items-center justify-center gap-4">
-        <div className="text-muted-foreground">{error ?? "No data available"}</div>
-        <Button variant="outline" onClick={() => navigate({ to: "/" })}>
-          <HugeiconsIcon icon={ArrowLeftIcon} strokeWidth={2} />
-          New Validation
-        </Button>
-      </div>
-    )
+  function handleNewValidation() {
+    setValidationResult(null)
+    setPendingValidation(null)
+    setPendingSource(null)
+    setIsMappingSubmitting(false)
   }
 
-  const data: Array<TableRowData> = validationResult.data.map((row, index) => ({
-    ...row,
-    _rowNum: index + 2,
-  }))
-
-  const columnNames = reorderColumns(validationResult.columns_found)
-
-  return (
-    <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+  if (validationResult) {
+    return (
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6 p-6">
         <div>
-          <h1 className="text-2xl font-bold">Validation Results</h1>
+          <h1 className="text-2xl font-bold">Guest Validation</h1>
           <p className="text-sm text-muted-foreground">
-            {validationResult.valid
-              ? "All data is valid"
-              : "Issues found - review below"}
+            Validate spreadsheet data without signing in
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate({ to: "/" })}>
-          <HugeiconsIcon icon={ArrowLeftIcon} strokeWidth={2} />
-          New Validation
-        </Button>
+        <ValidationResults
+          result={validationResult}
+          onNewValidation={handleNewValidation}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-2xl flex-col gap-6 p-6">
+      <div>
+        <h1 className="text-2xl font-bold">Guest Validation</h1>
+        <p className="text-sm text-muted-foreground">
+          Validate spreadsheet data without signing in
+        </p>
       </div>
 
-      <SummaryCards result={validationResult} />
-
-      <MissingColumnsAlert
-        columns={validationResult.missing_columns}
-        details={validationResult.details}
-        unmappedGenders={validationResult.unmapped_genders}
+      <InputTabs
+        onValidateUrl={handleValidateUrl}
+        onValidateRaw={handleValidateRaw}
+        onValidateFile={handleValidateFile}
+        isLoading={isLoading}
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => handleCopyExportToken(validationResult)}>
-          <HugeiconsIcon icon={Shield01Icon} strokeWidth={2} />
-          Copy Export Token
-        </Button>
-      </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
 
-      <DataTable
-        data={data}
-        columnNames={columnNames}
-        invalidRows={validationResult.invalid_rows}
-        duplicateRows={validationResult.duplicate_rows}
-        onCellEdit={() => {}}
-        onRowDelete={undefined}
-        showUniIdLookup={false}
+      <ColumnMappingModal
+        open={pendingValidation !== null}
+        validationResponse={pendingValidation}
+        onConfirm={handleColumnMapping}
+        onCancel={handleCancelMapping}
+        isSubmitting={isMappingSubmitting}
       />
     </div>
   )
