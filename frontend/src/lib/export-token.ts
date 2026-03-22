@@ -17,6 +17,17 @@ function base64urlEncode(str: string): string {
     .replace(/=+$/, "")
 }
 
+function base64urlDecode(str: string): string {
+  const base64 = str.replace(/-/g, "+").replace(/_/g, "/")
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4)
+  const decoded = atob(padded)
+  const bytes = new Uint8Array(decoded.length)
+  for (let i = 0; i < decoded.length; i++) {
+    bytes[i] = decoded.charCodeAt(i)
+  }
+  return new TextDecoder().decode(bytes)
+}
+
 function canonicalize(obj: unknown): string {
   return JSON.stringify(obj, Object.keys(obj as object).sort())
 }
@@ -37,6 +48,46 @@ export async function createExportToken(data: Array<RowData>, metadata: ExportTo
   const signature = await hmacSign(secret, canonicalPayload)
   const token: ExportToken = { payload, signature: `hmac-sha256:${signature}` }
   return base64urlEncode(JSON.stringify(token))
+}
+
+export interface TokenVerificationResult {
+  valid: boolean
+  payload: ExportTokenPayload | null
+  error?: string
+}
+
+export async function verifyExportToken(token: string): Promise<TokenVerificationResult> {
+  try {
+    const secret = getSigningSecret()
+    const decoded = base64urlDecode(token)
+    const parsed: unknown = JSON.parse(decoded)
+    
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !("payload" in parsed) ||
+      !("signature" in parsed) ||
+      typeof parsed.signature !== "string"
+    ) {
+      return { valid: false, payload: null, error: "Invalid token format" }
+    }
+    
+    if (!parsed.signature.startsWith("hmac-sha256:")) {
+      return { valid: false, payload: null, error: "Invalid signature format" }
+    }
+    
+    const signatureHash = parsed.signature.replace("hmac-sha256:", "")
+    const canonicalPayload = canonicalize(parsed.payload)
+    const expectedSignature = await hmacSign(secret, canonicalPayload)
+    
+    if (signatureHash !== expectedSignature) {
+      return { valid: false, payload: null, error: "Signature verification failed" }
+    }
+    
+    return { valid: true, payload: parsed.payload as ExportTokenPayload }
+  } catch {
+    return { valid: false, payload: null, error: "Failed to decode token" }
+  }
 }
 
 export { type ExportTokenMetadata }

@@ -14,6 +14,7 @@ import {
   Delete01Icon,
   Edit02Icon,
   Settings01Icon,
+  Shield01Icon,
   TextIcon,
   UserGroupIcon,
   UserSearch01Icon,
@@ -366,6 +367,14 @@ export function AppSidebar({ children }: AppSidebarProps) {
                   >
                     <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
                     <span>Find Gender</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate({ to: "/admin/token-validator" })}
+                  >
+                    <HugeiconsIcon icon={Shield01Icon} className="size-4" />
+                    <span>Token Validator</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

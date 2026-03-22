@@ -12,7 +12,6 @@ import {
   useValidateFromUrl,
 } from "@/lib/queries/validation"
 import { ColumnMappingModal } from "@/components/validation/column-mapping-modal"
-import { ValidationPreview } from "@/components/validation-preview/validation-preview"
 import { createAlias, createSession } from "@/lib/api-client"
 
 function DataInput() {
@@ -29,8 +28,6 @@ function DataInput() {
     rawData: string
   } | null>(null)
   const [isMappingSubmitting, setIsMappingSubmitting] = React.useState(false)
-  const [guestResult, setGuestResult] =
-    React.useState<ValidationResponse | null>(null)
 
   const isLoading =
     validateUrl.isPending ||
@@ -54,6 +51,12 @@ function DataInput() {
     navigate({ to: "/sessions/$id", params: { id: session.id } })
   }
 
+  function navigateToGuest(result: ValidationResponse) {
+    const key = `guest_validation_${Date.now()}`
+    sessionStorage.setItem(key, JSON.stringify(result))
+    navigate({ to: "/guest", search: { key } })
+  }
+
   function handleValidationResult(result: ValidationResponse, rawData: string) {
     if (result.missing_columns.length > 0) {
       setPendingValidation(result)
@@ -61,7 +64,7 @@ function DataInput() {
     } else if (isSignedIn) {
       createSessionAndNavigate(result, rawData)
     } else {
-      setGuestResult(result)
+      navigateToGuest(result)
     }
   }
 
@@ -115,7 +118,7 @@ function DataInput() {
               if (isSignedIn) {
                 createSessionAndNavigate(result, rawData)
               } else {
-                setGuestResult(result)
+                navigateToGuest(result)
               }
             },
             onSettled: () => setIsMappingSubmitting(false),
@@ -130,7 +133,7 @@ function DataInput() {
             ""
           )
         } else {
-          setGuestResult({ ...pendingValidation, missing_columns: [] })
+          navigateToGuest({ ...pendingValidation, missing_columns: [] })
         }
         setIsMappingSubmitting(false)
       }
@@ -143,16 +146,6 @@ function DataInput() {
   function handleCancelMapping() {
     setPendingValidation(null)
     setPendingSource(null)
-  }
-
-  function handleGuestReset() {
-    setGuestResult(null)
-  }
-
-  if (guestResult) {
-    return (
-      <ValidationPreview result={guestResult} onReset={handleGuestReset} />
-    )
   }
 
   return (

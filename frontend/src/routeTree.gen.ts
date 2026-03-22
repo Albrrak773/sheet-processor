@@ -9,13 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as GuestRouteImport } from './routes/guest'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SessionsIdRouteImport } from './routes/sessions.$id'
+import { Route as AdminTokenValidatorRouteImport } from './routes/admin/token-validator'
 import { Route as AdminMembersRouteImport } from './routes/admin/members'
 import { Route as AdminGenderRouteImport } from './routes/admin/gender'
 import { Route as AdminAliasesRouteImport } from './routes/admin/aliases'
 
+const GuestRoute = GuestRouteImport.update({
+  id: '/guest',
+  path: '/guest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -29,6 +36,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const SessionsIdRoute = SessionsIdRouteImport.update({
   id: '/sessions/$id',
   path: '/sessions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTokenValidatorRoute = AdminTokenValidatorRouteImport.update({
+  id: '/admin/token-validator',
+  path: '/admin/token-validator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMembersRoute = AdminMembersRouteImport.update({
@@ -49,26 +61,32 @@ const AdminAliasesRoute = AdminAliasesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/guest': typeof GuestRoute
   '/admin/aliases': typeof AdminAliasesRoute
   '/admin/gender': typeof AdminGenderRoute
   '/admin/members': typeof AdminMembersRoute
+  '/admin/token-validator': typeof AdminTokenValidatorRoute
   '/sessions/$id': typeof SessionsIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/guest': typeof GuestRoute
   '/admin/aliases': typeof AdminAliasesRoute
   '/admin/gender': typeof AdminGenderRoute
   '/admin/members': typeof AdminMembersRoute
+  '/admin/token-validator': typeof AdminTokenValidatorRoute
   '/sessions/$id': typeof SessionsIdRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/guest': typeof GuestRoute
   '/admin/aliases': typeof AdminAliasesRoute
   '/admin/gender': typeof AdminGenderRoute
   '/admin/members': typeof AdminMembersRoute
+  '/admin/token-validator': typeof AdminTokenValidatorRoute
   '/sessions/$id': typeof SessionsIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -76,40 +94,55 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/guest'
     | '/admin/aliases'
     | '/admin/gender'
     | '/admin/members'
+    | '/admin/token-validator'
     | '/sessions/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/guest'
     | '/admin/aliases'
     | '/admin/gender'
     | '/admin/members'
+    | '/admin/token-validator'
     | '/sessions/$id'
     | '/admin'
   id:
     | '__root__'
     | '/'
+    | '/guest'
     | '/admin/aliases'
     | '/admin/gender'
     | '/admin/members'
+    | '/admin/token-validator'
     | '/sessions/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GuestRoute: typeof GuestRoute
   AdminAliasesRoute: typeof AdminAliasesRoute
   AdminGenderRoute: typeof AdminGenderRoute
   AdminMembersRoute: typeof AdminMembersRoute
+  AdminTokenValidatorRoute: typeof AdminTokenValidatorRoute
   SessionsIdRoute: typeof SessionsIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/guest': {
+      id: '/guest'
+      path: '/guest'
+      fullPath: '/guest'
+      preLoaderRoute: typeof GuestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -129,6 +162,13 @@ declare module '@tanstack/react-router' {
       path: '/sessions/$id'
       fullPath: '/sessions/$id'
       preLoaderRoute: typeof SessionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/token-validator': {
+      id: '/admin/token-validator'
+      path: '/admin/token-validator'
+      fullPath: '/admin/token-validator'
+      preLoaderRoute: typeof AdminTokenValidatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/members': {
@@ -157,9 +197,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GuestRoute: GuestRoute,
   AdminAliasesRoute: AdminAliasesRoute,
   AdminGenderRoute: AdminGenderRoute,
   AdminMembersRoute: AdminMembersRoute,
+  AdminTokenValidatorRoute: AdminTokenValidatorRoute,
   SessionsIdRoute: SessionsIdRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
