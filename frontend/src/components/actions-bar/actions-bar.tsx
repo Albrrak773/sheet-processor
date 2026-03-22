@@ -4,6 +4,7 @@ import {
   Download04Icon,
   GitMergeIcon,
   RefreshIcon,
+  Shield01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
@@ -22,6 +23,8 @@ import {
   downloadXlsx,
   rowsToTsv,
 } from "@/lib/exporters"
+import { transformData } from "@/lib/api-client"
+import { createExportToken } from "@/lib/export-token"
 
 const GoogleSheetsIcon = () => (
   <svg viewBox="0 0 24 24" className="size-4">
@@ -56,6 +59,7 @@ interface ActionsBarProps {
   duplicateGroupCount?: number
   onShowDuplicateResolver?: () => void
   originalCsv?: string
+  isValid: boolean
 }
 
 function ActionsBar({
@@ -69,6 +73,7 @@ function ActionsBar({
   duplicateGroupCount = 0,
   onShowDuplicateResolver,
   originalCsv,
+  isValid,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
     const tsv = rowsToTsv(data, columnNames)
@@ -80,6 +85,27 @@ function ActionsBar({
     if (!originalCsv) return
     await navigator.clipboard.writeText(originalCsv)
     toast.success("Original CSV copied to clipboard")
+  }
+
+  async function handleCopyExportToken() {
+    try {
+      const transformed = await transformData(data)
+      const token = await createExportToken(transformed.data, {
+        row_count: transformed.data.length,
+        columns: transformed.columns,
+        valid: isValid,
+        validated_at: new Date().toISOString(),
+        source: "sheet-processor",
+      })
+      await navigator.clipboard.writeText(token)
+      toast.success("Export token copied to clipboard")
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("VITE_SIGNING_SECRET")) {
+        toast.error("Export token not configured. Please set VITE_SIGNING_SECRET.")
+      } else {
+        toast.error("Failed to create export token")
+      }
+    }
   }
 
   async function handleOpenSheet() {
@@ -107,6 +133,11 @@ function ActionsBar({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={handleCopyExportToken}>
+          <HugeiconsIcon icon={Shield01Icon} strokeWidth={2} />
+          Copy Export Token
+        </Button>
+
         {duplicateGroupCount > 0 && onShowDuplicateResolver && (
           <Button
             variant="outline"

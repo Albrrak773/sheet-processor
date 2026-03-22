@@ -156,3 +156,30 @@ export interface MemberLookupRequest {
   email?: string
   phone_number?: string
 }
+
+export interface TransformRequest {
+  data: Array<RowData>
+}
+
+export interface TransformResponse {
+  data: Array<RowData>
+  columns: Array<string>
+}
+
+export interface ExportTokenMetadata {
+  row_count: number
+  columns: Array<string>
+  valid: boolean
+  validated_at: string
+  source: "sheet-processor"
+}
+
+export interface ExportTokenPayload {
+  data: Array<RowData>
+  metadata: ExportTokenMetadata
+}
+
+export interface ExportToken {
+  payload: ExportTokenPayload
+  signature: string
+}

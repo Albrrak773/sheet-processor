@@ -510,6 +510,7 @@ function SessionPage() {
         duplicateGroupCount={validationResult.duplicate_rows.length}
         onShowDuplicateResolver={() => setDuplicateResolverOpen(true)}
         originalCsv={session.original_csv}
+        isValid={validationResult.valid}
       />
 
       <DataTable
