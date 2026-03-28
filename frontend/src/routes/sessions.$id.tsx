@@ -416,13 +416,21 @@ function SessionPage() {
   }
 
   function handleDuplicateResolve(
-    keepRowNum: number,
-    deleteRowNums: Array<number>
+    resolutions: Array<{
+      keepRowNum: number
+      deleteRowNums: Array<number>
+    }>
   ) {
     if (!session) return
 
-    const deleteSet = new Set(deleteRowNums)
-    const updatedData = data.filter((row) => !deleteSet.has(row._rowNum))
+    const allDeleteRowNums = new Set<number>()
+    for (const resolution of resolutions) {
+      for (const rowNum of resolution.deleteRowNums) {
+        allDeleteRowNums.add(rowNum)
+      }
+    }
+
+    const updatedData = data.filter((row) => !allDeleteRowNums.has(row._rowNum))
     const reindexedData = updatedData.map((row, index) => ({
       ...row,
       _rowNum: index + 2,
@@ -450,8 +458,10 @@ function SessionPage() {
             setData(dataWithRowNum)
             setHasChanges(false)
             queryClient.invalidateQueries({ queryKey: ["session", id] })
+            const totalDeleted = allDeleteRowNums.size
+            const groupCount = resolutions.length
             toast.success(
-              `Kept row ${keepRowNum}, deleted ${deleteRowNums.length} duplicate${deleteRowNums.length > 1 ? "s" : ""}`
+              `Resolved ${groupCount} duplicate group${groupCount > 1 ? "s" : ""}, deleted ${totalDeleted} row${totalDeleted > 1 ? "s" : ""}`
             )
           } catch {
             toast.error("Failed to save changes after duplicate resolution")
@@ -462,6 +472,13 @@ function SessionPage() {
         },
       }
     )
+  }
+
+  function handleSingleDuplicateResolve(
+    keepRowNum: number,
+    deleteRowNums: Array<number>
+  ) {
+    handleDuplicateResolve([{ keepRowNum, deleteRowNums }])
   }
 
   if (isLoading || !session || !validationResult) {
@@ -558,7 +575,8 @@ function SessionPage() {
         duplicateGroups={validationResult.duplicate_rows}
         data={data}
         columnNames={columnNames}
-        onResolve={handleDuplicateResolve}
+        onResolve={handleSingleDuplicateResolve}
+        onResolveAll={handleDuplicateResolve}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

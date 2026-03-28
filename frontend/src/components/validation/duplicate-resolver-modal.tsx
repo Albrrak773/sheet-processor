@@ -28,6 +28,9 @@ interface DuplicateResolverModalProps {
   data: Array<TableRowData>
   columnNames: Array<string>
   onResolve: (keepRowNum: number, deleteRowNums: Array<number>) => void
+  onResolveAll?: (
+    resolutions: Array<{ keepRowNum: number; deleteRowNums: Array<number> }>
+  ) => void
 }
 
 function extractOriginalKey(displayName: string): string {
@@ -49,6 +52,7 @@ function DuplicateResolverModal({
   data,
   columnNames,
   onResolve,
+  onResolveAll,
 }: DuplicateResolverModalProps) {
   const [currentIndex, setCurrentIndex] = React.useState(0)
   const [selectedRowNum, setSelectedRowNum] = React.useState<number | null>(
@@ -81,6 +85,66 @@ function DuplicateResolverModal({
       .map((rowNum) => data.find((row) => row._rowNum === rowNum))
       .filter((row): row is TableRowData => row !== undefined)
   }, [currentGroup, data])
+
+  function countNonEmptyFields(row: TableRowData): number {
+    let count = 0
+    for (const key of columnNames) {
+      const originalKey = extractOriginalKey(key)
+      const value = row[originalKey]
+      if (value != null && String(value).trim() !== "") {
+        count++
+      }
+    }
+    return count
+  }
+
+  function findMostCompleteRow(rowNums: Array<number>): number {
+    const rows = rowNums
+      .map((rowNum) => ({
+        rowNum,
+        row: data.find((r) => r._rowNum === rowNum),
+      }))
+      .filter(
+        (item): item is { rowNum: number; row: TableRowData } =>
+          item.row !== undefined
+      )
+
+    let bestRowNum = rows[0]?.rowNum
+    let bestCompleteness = 0
+
+    for (const { rowNum, row } of rows) {
+      const completeness = countNonEmptyFields(row)
+      if (
+        completeness > bestCompleteness ||
+        (completeness === bestCompleteness && rowNum > bestRowNum)
+      ) {
+        bestRowNum = rowNum
+        bestCompleteness = completeness
+      }
+    }
+
+    return bestRowNum
+  }
+
+  function getResolveAllResolutions(): Array<{
+    keepRowNum: number
+    deleteRowNums: Array<number>
+  }> {
+    return duplicateGroups.map((group) => {
+      const keepRowNum = findMostCompleteRow(group.duplicate_rows)
+      const deleteRowNums = group.duplicate_rows.filter(
+        (rowNum) => rowNum !== keepRowNum
+      )
+      return { keepRowNum, deleteRowNums }
+    })
+  }
+
+  function handleResolveAll() {
+    if (!onResolveAll) return
+    const resolutions = getResolveAllResolutions()
+    onResolveAll(resolutions)
+    onOpenChange(false)
+  }
 
   function handleResolve() {
     if (selectedRowNum === null || currentGroup === undefined) return
@@ -212,6 +276,15 @@ function DuplicateResolverModal({
             remaining
           </span>
           <div className="flex gap-2">
+            {onResolveAll && totalGroups > 1 && (
+              <Button
+                variant="outline"
+                onClick={handleResolveAll}
+                className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+              >
+                Resolve All
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
