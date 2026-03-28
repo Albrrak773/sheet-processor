@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type {
   GenderValue,
+  InvalidRow,
   RowData,
   TableRowData,
   ValidationResponse,
@@ -23,13 +24,22 @@ import { SummaryCards } from "@/components/validation/summary-cards"
 import { MissingColumnsAlert } from "@/components/validation/missing-columns-alert"
 import { DataTable } from "@/components/validation/editable-data-table/data-table"
 import { ActionsBar } from "@/components/actions-bar/actions-bar"
+import {
+  LookupAllResultsModal,
+  type LookupResult,
+} from "@/components/actions-bar/lookup-all-results-modal"
 import { GenderColumnModal } from "@/components/validation/gender-column-modal"
 import { GenderMappingModal } from "@/components/validation/gender-mapping-modal"
 import { UniIdLookupModal } from "@/components/validation/uni-id-lookup-modal"
 import { DuplicateResolverModal } from "@/components/validation/duplicate-resolver-modal"
 import { useValidateFromRaw } from "@/lib/queries/validation"
 import { rowsToTsv } from "@/lib/exporters"
-import { createGenderAlias, getSession, updateSession } from "@/lib/api-client"
+import {
+  createGenderAlias,
+  getSession,
+  lookupMembers,
+  updateSession,
+} from "@/lib/api-client"
 import { SessionPageSkeleton } from "@/components/skeletons/session-page-skeleton"
 import { useIsAdmin } from "@/hooks/use-role"
 
@@ -97,6 +107,12 @@ function SessionPage() {
   )
   const [duplicateResolverOpen, setDuplicateResolverOpen] =
     React.useState(false)
+  const [lookupAllResultsOpen, setLookupAllResultsOpen] = React.useState(false)
+  const [lookupAllResults, setLookupAllResults] = React.useState<
+    Array<LookupResult>
+  >([])
+  const [isLookupAllPending, setIsLookupAllPending] = React.useState(false)
+  const [deleteAllInvalidOpen, setDeleteAllInvalidOpen] = React.useState(false)
 
   React.useEffect(() => {
     setData([])
@@ -415,6 +431,218 @@ function SessionPage() {
     return value != null ? String(value).trim() : null
   }
 
+  function findColumnKey(canonicalName: string): string | null {
+    if (!validationResult) return null
+    const column = validationResult.columns_found.find((c) => {
+      const match = c.match(/\(([^)]+)\)$/)
+      const canonical = match ? match[1].trim().toLowerCase() : c.toLowerCase()
+      return canonical === canonicalName
+    })
+    if (!column) return null
+    const keyMatch = column.match(/^(.+?)\s*\([^)]+\)$/)
+    return keyMatch ? keyMatch[1].trim() : column
+  }
+
+  function getRowValue(
+    row: TableRowData,
+    canonicalName: string
+  ): string | null {
+    const key = findColumnKey(canonicalName)
+    if (!key) return null
+    const value = row[key]
+    return value != null && String(value).trim() !== ""
+      ? String(value).trim()
+      : null
+  }
+
+  function getRowsWithUniIdErrors(): Array<number> {
+    if (!validationResult) return []
+    const uniIdColumnKey = findColumnKey("university id")
+    if (!uniIdColumnKey) return []
+
+    return [
+      ...new Set(
+        validationResult.invalid_rows
+          .filter(
+            (ir) =>
+              ir.column === uniIdColumnKey || ir.column === "university id"
+          )
+          .map((ir) => ir.row)
+      ),
+    ]
+  }
+
+  async function handleLookupAllIds() {
+    if (!session || !isAdmin) return
+
+    const rowsWithErrors = getRowsWithUniIdErrors()
+    if (rowsWithErrors.length === 0) {
+      toast.info("No rows with university ID errors found")
+      return
+    }
+
+    setIsLookupAllPending(true)
+    const results: Array<LookupResult> = []
+
+    try {
+      for (const rowNum of rowsWithErrors) {
+        const row = data.find((r) => r._rowNum === rowNum)
+        if (!row) {
+          results.push({
+            rowNum,
+            name: null,
+            found: false,
+            uniId: null,
+            skipped: true,
+            skipReason: "not_found",
+          })
+          continue
+        }
+
+        const name = getRowValue(row, "name")
+        const email = getRowValue(row, "email")
+        const phone = getRowValue(row, "phone number")
+
+        try {
+          const members = await lookupMembers({
+            name: name ?? undefined,
+            email: email ?? undefined,
+            phone_number: phone ?? undefined,
+          })
+
+          if (members.length === 1) {
+            const member = members[0]
+            results.push({
+              rowNum,
+              name,
+              found: true,
+              uniId: member.uni_id,
+              skipped: false,
+              skipReason: null,
+            })
+          } else if (members.length === 0) {
+            results.push({
+              rowNum,
+              name,
+              found: false,
+              uniId: null,
+              skipped: true,
+              skipReason: "not_found",
+            })
+          } else {
+            results.push({
+              rowNum,
+              name,
+              found: false,
+              uniId: null,
+              skipped: true,
+              skipReason: "multiple_matches",
+            })
+          }
+        } catch {
+          results.push({
+            rowNum,
+            name,
+            found: false,
+            uniId: null,
+            skipped: true,
+            skipReason: "not_found",
+          })
+        }
+      }
+
+      const resolved = results.filter((r) => r.found && !r.skipped)
+      if (resolved.length > 0) {
+        const columnKey = findColumnKey("university id")
+        if (columnKey) {
+          setData((prev) => {
+            const updated = [...prev]
+            for (const result of resolved) {
+              const index = updated.findIndex(
+                (r) => r._rowNum === result.rowNum
+              )
+              if (index !== -1 && result.uniId) {
+                updated[index] = {
+                  ...updated[index],
+                  [columnKey]: result.uniId,
+                }
+              }
+            }
+            return updated
+          })
+          setHasChanges(true)
+        }
+      }
+
+      setLookupAllResults(results)
+      setLookupAllResultsOpen(true)
+    } finally {
+      setIsLookupAllPending(false)
+    }
+  }
+
+  function handleDeleteAllInvalidConfirm() {
+    if (!session || !validationResult) return
+
+    const invalidRowNumbers = new Set(
+      validationResult.invalid_rows.map((ir: InvalidRow) => ir.row)
+    )
+
+    if (invalidRowNumbers.size === 0) {
+      toast.info("No invalid rows to delete")
+      return
+    }
+
+    const updatedData = data.filter(
+      (row) => !invalidRowNumbers.has(row._rowNum)
+    )
+    const reindexedData = updatedData.map((row, index) => ({
+      ...row,
+      _rowNum: index + 2,
+    }))
+
+    setData(reindexedData)
+
+    const dataWithoutRowNum: Array<RowData> = reindexedData.map(
+      ({ _rowNum: _, ...rest }) => rest
+    )
+    const tsv = rowsToTsv(dataWithoutRowNum)
+
+    revalidate.mutate(
+      { rawData: tsv },
+      {
+        onSuccess: async (result) => {
+          const dataWithRowNum = result.data.map((row, index) => ({
+            ...row,
+            _rowNum: index + 2,
+          }))
+
+          try {
+            await updateSession(session.id, { data: result.data })
+            setValidationResult(result)
+            setData(dataWithRowNum)
+            setHasChanges(false)
+            setDeleteAllInvalidOpen(false)
+            queryClient.invalidateQueries({ queryKey: ["session", id] })
+            toast.success(
+              `Deleted ${invalidRowNumbers.size} invalid row${invalidRowNumbers.size > 1 ? "s" : ""}`
+            )
+          } catch {
+            toast.error("Failed to save changes after deleting invalid rows")
+          }
+        },
+        onError: () => {
+          toast.error("Validation failed after deleting invalid rows")
+        },
+      }
+    )
+  }
+
+  const invalidRowCount = validationResult
+    ? new Set(validationResult.invalid_rows.map((ir: InvalidRow) => ir.row))
+        .size
+    : 0
+
   function handleDuplicateResolve(
     resolutions: Array<{
       keepRowNum: number
@@ -529,6 +757,12 @@ function SessionPage() {
         onShowDuplicateResolver={() => setDuplicateResolverOpen(true)}
         originalCsv={session.original_csv}
         isValid={validationResult.valid}
+        invalidRowCount={invalidRowCount}
+        onLookupAllIds={isAdmin ? handleLookupAllIds : undefined}
+        isLookupAllPending={isLookupAllPending}
+        onDeleteAllInvalid={
+          invalidRowCount > 0 ? () => setDeleteAllInvalidOpen(true) : undefined
+        }
       />
 
       <DataTable
@@ -603,6 +837,36 @@ function SessionPage() {
               onClick={handleRowDeleteConfirm}
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <LookupAllResultsModal
+        open={lookupAllResultsOpen}
+        onOpenChange={setLookupAllResultsOpen}
+        results={lookupAllResults}
+      />
+
+      <AlertDialog
+        open={deleteAllInvalidOpen}
+        onOpenChange={setDeleteAllInvalidOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Invalid Rows</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {invalidRowCount} invalid row
+              {invalidRowCount > 1 ? "s" : ""}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteAllInvalidConfirm}
+            >
+              Delete {invalidRowCount} Row{invalidRowCount > 1 ? "s" : ""}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,9 +1,11 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Copy01Icon,
+  Delete01Icon,
   Download04Icon,
   GitMergeIcon,
   RefreshIcon,
+  Search01Icon,
   Shield01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons"
@@ -60,6 +62,10 @@ interface ActionsBarProps {
   onShowDuplicateResolver?: () => void
   originalCsv?: string
   isValid: boolean
+  invalidRowCount?: number
+  onLookupAllIds?: () => void
+  isLookupAllPending?: boolean
+  onDeleteAllInvalid?: () => void
 }
 
 function ActionsBar({
@@ -74,6 +80,10 @@ function ActionsBar({
   onShowDuplicateResolver,
   originalCsv,
   isValid,
+  invalidRowCount = 0,
+  onLookupAllIds,
+  isLookupAllPending = false,
+  onDeleteAllInvalid,
 }: ActionsBarProps) {
   async function handleCopyTsv() {
     const tsv = rowsToTsv(data, columnNames)
@@ -156,6 +166,38 @@ function ActionsBar({
               className="ml-1 bg-purple-100 text-purple-700"
             >
               {duplicateGroupCount}
+            </Badge>
+          </Button>
+        )}
+
+        {invalidRowCount > 0 && onLookupAllIds && (
+          <Button
+            variant="outline"
+            onClick={onLookupAllIds}
+            disabled={isLookupAllPending}
+            className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+          >
+            <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
+            {isLookupAllPending ? "Looking up..." : "Lookup IDs"}
+            <Badge
+              variant="secondary"
+              className="ml-1 bg-blue-100 text-blue-700"
+            >
+              {invalidRowCount}
+            </Badge>
+          </Button>
+        )}
+
+        {invalidRowCount > 0 && onDeleteAllInvalid && (
+          <Button
+            variant="outline"
+            onClick={onDeleteAllInvalid}
+            className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+          >
+            <HugeiconsIcon icon={Delete01Icon} strokeWidth={2} />
+            Delete Invalid
+            <Badge variant="secondary" className="ml-1 bg-red-100 text-red-700">
+              {invalidRowCount}
             </Badge>
           </Button>
         )}
