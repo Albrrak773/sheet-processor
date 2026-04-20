@@ -34,8 +34,13 @@ async def extract_from_google_sheet(sheet_url: HttpUrl) -> ExtractionResult:
             raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
         response.raise_for_status()
 
+    _assert_not_empty(response.content, "Google Sheet")
+
+    try:
+        df = pd.read_csv(io.BytesIO(response.content))
+    except pd.errors.EmptyDataError as e:
+        raise HTTPException(status_code=400, detail="The Google Sheet contains no data") from e
     raw_csv = response.content.decode("utf-8")
-    df = pd.read_csv(io.BytesIO(response.content))
     df = _normalize_columns(df)
 
     return ExtractionResult(_dataframe_to_rows(df), raw_csv)
@@ -53,8 +58,13 @@ async def extract_from_published_sheet(sheet_url: HttpUrl) -> ExtractionResult:
             raise HTTPException(status_code=400, detail="Google Sheet is not publicly accessible")
         response.raise_for_status()
 
+    _assert_not_empty(response.content, "Google Sheet")
+
+    try:
+        df = pd.read_csv(io.BytesIO(response.content))
+    except pd.errors.EmptyDataError as e:
+        raise HTTPException(status_code=400, detail="The Google Sheet contains no data") from e
     raw_csv = response.content.decode("utf-8")
-    df = pd.read_csv(io.BytesIO(response.content))
     df = _normalize_columns(df)
 
     return ExtractionResult(_dataframe_to_rows(df), raw_csv)
@@ -74,9 +84,15 @@ async def extract_from_file_url(file_url: HttpUrl) -> ExtractionResult:
         response = await client.get(str(file_url))
         response.raise_for_status()
 
-    raw_csv = response.content.decode("utf-8")
+    _assert_not_empty(response.content, "file")
+
     df = _read_file(response.content, extension)
     df = _normalize_columns(df)
+
+    if extension in {".xlsx", ".xls"}:
+        raw_csv = df.to_csv(index=False)
+    else:
+        raw_csv = response.content.decode("utf-8")
 
     return ExtractionResult(_dataframe_to_rows(df), raw_csv)
 
@@ -86,6 +102,11 @@ def extract_from_raw(data: str) -> ExtractionResult:
     df = _normalize_columns(df)
 
     return ExtractionResult(_dataframe_to_rows(df), df.to_csv(index=False))
+
+
+def _assert_not_empty(content: bytes, source_label: str) -> None:
+    if not content or not content.strip():
+        raise HTTPException(status_code=400, detail=f"The {source_label} contains no data")
 
 
 def _extract_sheet_id(url: HttpUrl) -> str | None:
@@ -110,21 +131,27 @@ def _get_extension(filename: HttpUrl) -> str:
 
 
 def _read_file(content: bytes, extension: str) -> pd.DataFrame:
-    if extension == ".csv":
-        return pd.read_csv(io.BytesIO(content))
-    elif extension in {".xlsx", ".xls"}:
-        return pd.read_excel(io.BytesIO(content))
-    elif extension == ".tsv":
-        return pd.read_csv(io.BytesIO(content), sep="\t")
-    else:
-        raise ValueError(f"Unsupported file format: {extension}")
+    try:
+        if extension == ".csv":
+            return pd.read_csv(io.BytesIO(content))
+        elif extension in {".xlsx", ".xls"}:
+            return pd.read_excel(io.BytesIO(content))
+        elif extension == ".tsv":
+            return pd.read_csv(io.BytesIO(content), sep="\t")
+        else:
+            raise ValueError(f"Unsupported file format: {extension}")
+    except pd.errors.EmptyDataError as e:
+        raise HTTPException(status_code=400, detail="The file contains no data") from e
 
 
 def _detect_and_parse_raw(data: str) -> pd.DataFrame:
     first_line = data.split("\n")[0] if data else ""
-    if "\t" in first_line:
-        return pd.read_csv(io.StringIO(data), sep="\t")
-    return pd.read_csv(io.StringIO(data))
+    try:
+        if "\t" in first_line:
+            return pd.read_csv(io.StringIO(data), sep="\t")
+        return pd.read_csv(io.StringIO(data))
+    except pd.errors.EmptyDataError as e:
+        raise HTTPException(status_code=400, detail="The provided data is empty") from e
 
 
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:

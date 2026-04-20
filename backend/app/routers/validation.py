@@ -81,6 +81,12 @@ async def validate(
     rows = result.rows
     raw_csv = result.raw_csv
 
+    if not rows:
+        raise HTTPException(
+            status_code=400,
+            detail="The provided data is empty — no rows found to validate",
+        )
+
     # 2. validate headers
     is_valid, missing_columns, present_columns, unmapped_columns = validate_headers(rows, ignore_header)
 
