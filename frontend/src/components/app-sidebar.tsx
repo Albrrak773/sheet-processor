@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate, useParams } from "@tanstack/react-router"
+import { Link, useParams } from "@tanstack/react-router"
 import {
   Show,
   SignInButton,
@@ -39,11 +39,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -69,7 +64,6 @@ interface AppSidebarProps {
 }
 
 function SessionList() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const params = useParams({ from: "/sessions/$id", shouldThrow: false })
   const currentSessionId = params?.id
@@ -148,23 +142,16 @@ function SessionList() {
           <SidebarMenu>
             {sessions.map((session) => (
               <SidebarMenuItem key={session.id}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      isActive={session.id === currentSessionId}
-                      onClick={() =>
-                        navigate({
-                          to: "/sessions/$id",
-                          params: { id: session.id },
-                        })
-                      }
-                      className="w-full pe-14"
-                    >
-                      <span className="truncate">{session.title}</span>
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{session.title}</TooltipContent>
-                </Tooltip>
+                <SidebarMenuButton
+                  asChild
+                  isActive={session.id === currentSessionId}
+                  tooltip={session.title}
+                  className="w-full pe-14"
+                >
+                  <Link to="/sessions/$id" params={{ id: session.id }}>
+                    <span className="truncate">{session.title}</span>
+                  </Link>
+                </SidebarMenuButton>
                 <div className="absolute inset-e-1 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 group-hover/menu-item:opacity-100">
                   <Button
                     variant="ghost"
@@ -293,7 +280,6 @@ function SidebarFooterContent() {
 }
 
 export function AppSidebar({ children }: AppSidebarProps) {
-  const navigate = useNavigate()
   const { getToken, isSignedIn } = useAuth()
   const isAdmin = useIsAdmin()
 
@@ -308,11 +294,6 @@ export function AppSidebar({ children }: AppSidebarProps) {
     if (!isSignedIn) {
       toast.info("Sign in to create persistent sessions")
     }
-    navigate({ to: isSignedIn ? "/" : "/guest" })
-  }
-
-  function handleLogoClick() {
-    navigate({ to: isSignedIn ? "/" : "/guest" })
   }
 
   return (
@@ -320,14 +301,13 @@ export function AppSidebar({ children }: AppSidebarProps) {
       <Sidebar>
         <SidebarHeader className="flex flex-row items-center justify-between">
           <SidebarTrigger />
-          <button
-            type="button"
-            onClick={handleLogoClick}
-            className="flex cursor-pointer items-center gap-2 bg-transparent p-0 hover:opacity-80"
+          <Link
+            to={isSignedIn ? "/" : "/guest"}
+            className="flex items-center gap-2 hover:opacity-80"
           >
             <img src="/favicon-32x32.png" alt="" className="size-5" />
             <span className="font-semibold">Sheet Processor</span>
-          </button>
+          </Link>
           <div className="w-8" />
         </SidebarHeader>
         <SidebarContent>
@@ -335,9 +315,14 @@ export function AppSidebar({ children }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleNewSessionClick}>
-                    <HugeiconsIcon icon={Add01Icon} className="size-4" />
-                    <span>New Session</span>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={isSignedIn ? "/" : "/guest"}
+                      onClick={handleNewSessionClick}
+                    >
+                      <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                      <span>New Session</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -349,53 +334,57 @@ export function AppSidebar({ children }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => navigate({ to: "/admin" })}>
-                    <HugeiconsIcon icon={Settings01Icon} className="size-4" />
-                    <span>Admin Panel</span>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin">
+                      <HugeiconsIcon icon={Settings01Icon} className="size-4" />
+                      <span>Admin Panel</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate({ to: "/admin/aliases" })}
-                  >
-                    <HugeiconsIcon icon={TextIcon} className="size-4" />
-                    <span>Manage Aliases</span>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/aliases">
+                      <HugeiconsIcon icon={TextIcon} className="size-4" />
+                      <span>Manage Aliases</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {/* Members page is admin-only */}
                 {isAdmin && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate({ to: "/admin/members" })}
-                    >
-                      <HugeiconsIcon
-                        icon={UserSearch01Icon}
-                        className="size-4"
-                      />
-                      <span>Search Members</span>
+                    <SidebarMenuButton asChild>
+                      <Link to="/admin/members">
+                        <HugeiconsIcon
+                          icon={UserSearch01Icon}
+                          className="size-4"
+                        />
+                        <span>Search Members</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate({ to: "/admin/gender" })}
-                  >
-                    <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
-                    <span>Find Gender</span>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/gender">
+                      <HugeiconsIcon icon={UserGroupIcon} className="size-4" />
+                      <span>Find Gender</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate({ to: "/admin/token-validator" })}
-                  >
-                    <HugeiconsIcon icon={Shield01Icon} className="size-4" />
-                    <span>Token Validator</span>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/token-validator">
+                      <HugeiconsIcon icon={Shield01Icon} className="size-4" />
+                      <span>Token Validator</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => navigate({ to: "/guest" })}>
-                    <HugeiconsIcon icon={TextIcon} className="size-4" />
-                    <span>Guest Validation</span>
+                  <SidebarMenuButton asChild>
+                    <Link to="/guest">
+                      <HugeiconsIcon icon={TextIcon} className="size-4" />
+                      <span>Guest Validation</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
